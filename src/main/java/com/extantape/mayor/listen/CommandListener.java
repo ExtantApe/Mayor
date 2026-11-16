@@ -49,6 +49,7 @@ public final class CommandListener implements Listener {
                 } else plugin.tell(from, decision.key(), decision.vars());
             }
             case DELIVER -> {
+                if (decision.rewrite() != null) event.setMessage(decision.rewrite());
                 UUID to = decision.partner().id();
                 plugin.partners().put(from.getUniqueId(), to);
                 plugin.partners().put(to, from.getUniqueId());

@@ -25,21 +25,23 @@ public final class CommandRules {
 
     /**
      * The outcome. For BLOCK, either {@code key} names a message in messages, or {@code text} is the message itself.
-     * For DELIVER, {@code partner} is who the message goes to, remembered for replies.
+     * For DELIVER, {@code partner} is who the message goes to, remembered for replies, and {@code rewrite}, when not
+     * null, is the command line to run instead: the same message with blocked words masked, because an unfiltered
+     * player is writing to a filtered one.
      */
-    public record Decision(Kind kind, String key, String text, Map<String, String> vars, Subject partner) {
-        static final Decision PASS = new Decision(Kind.PASS, null, null, Map.of(), null);
+    public record Decision(Kind kind, String key, String text, Map<String, String> vars, Subject partner, String rewrite) {
+        static final Decision PASS = new Decision(Kind.PASS, null, null, Map.of(), null, null);
 
         static Decision block(String key, Map<String, String> vars) {
-            return new Decision(Kind.BLOCK, key, null, vars, null);
+            return new Decision(Kind.BLOCK, key, null, vars, null, null);
         }
 
         static Decision blockText(String text) {
-            return new Decision(Kind.BLOCK, null, text, Map.of(), null);
+            return new Decision(Kind.BLOCK, null, text, Map.of(), null, null);
         }
 
-        static Decision deliver(Subject partner) {
-            return new Decision(Kind.DELIVER, null, null, Map.of(), partner);
+        static Decision deliver(Subject partner, String rewrite) {
+            return new Decision(Kind.DELIVER, null, null, Map.of(), partner, rewrite);
         }
 
         public boolean blocked() {
@@ -50,16 +52,18 @@ public final class CommandRules {
     private final Reach reach;
     private final WordFilter filter;
     private final boolean filterMessages;
+    private final boolean maskForViewers;
     private final Set<String> messageCommands;
     private final Set<String> replyCommands;
     private final Set<String> broadcastCommands;
     private final List<Blocked> blocked;
 
-    public CommandRules(Reach reach, WordFilter filter, boolean filterMessages, Set<String> messageCommands,
+    public CommandRules(Reach reach, WordFilter filter, boolean filterMessages, boolean maskForViewers, Set<String> messageCommands,
                         Set<String> replyCommands, Set<String> broadcastCommands, List<Blocked> blocked) {
         this.reach = reach;
         this.filter = filter;
         this.filterMessages = filterMessages;
+        this.maskForViewers = maskForViewers;
         this.messageCommands = lower(messageCommands);
         this.replyCommands = lower(replyCommands);
         this.broadcastCommands = lower(broadcastCommands);
@@ -96,7 +100,8 @@ public final class CommandRules {
             if (to == null || to.id().equals(from.id())) return Decision.PASS;
             if (!reach.mayReach(from, to)) return Decision.block("message-cant-reach", Map.of("player", to.name()));
             if (flagged(from, args, 1)) return Decision.block("filtered-message", Map.of());
-            return Decision.deliver(to);
+            String masked = masked(from, to, args, 1);
+            return Decision.deliver(to, masked == null ? null : slash(line) + parts[0] + " " + args[0] + " " + masked);
         }
 
         if (matches(replyCommands, label)) {
@@ -107,7 +112,8 @@ public final class CommandRules {
             if (to == null) return Decision.block("reply-offline", Map.of());
             if (!reach.mayReach(from, to)) return Decision.block("reply-cant-reach", Map.of("player", to.name()));
             if (flagged(from, args, 0)) return Decision.block("filtered-message", Map.of());
-            return Decision.deliver(to);
+            String masked = masked(from, to, args, 0);
+            return Decision.deliver(to, masked == null ? null : slash(line) + parts[0] + " " + masked);
         }
         return Decision.PASS;
     }
@@ -115,6 +121,22 @@ public final class CommandRules {
     private boolean flagged(Subject sender, String[] args, int from) {
         return filterMessages && from < args.length && !sender.has(WordFilter.BYPASS)
                 && filter.flags(String.join(" ", Arrays.copyOfRange(args, from, args.length)));
+    }
+
+    /**
+     * With mask-for-viewers on, an unfiltered sender's message to a filtered player comes back with its blocked words
+     * masked; otherwise null, and the message goes as typed. A filtered player is one without the bypass, so a player
+     * whose permissions aren't known yet is treated as filtered.
+     */
+    private String masked(Subject sender, Subject to, String[] args, int from) {
+        if (!maskForViewers || !filterMessages || from >= args.length || !sender.has(WordFilter.BYPASS) || to.has(WordFilter.BYPASS)) return null;
+        String text = String.join(" ", Arrays.copyOfRange(args, from, args.length));
+        String masked = filter.mask(text);
+        return masked.equals(text) ? null : masked;
+    }
+
+    private static String slash(String line) {
+        return line.startsWith("/") ? "/" : "";
     }
 
     static boolean matches(Set<String> entries, String label) {

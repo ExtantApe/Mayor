@@ -23,7 +23,7 @@ public record Settings(
     }
 
     /** Which kinds of text the word filter checks. */
-    public record Filtered(boolean chat, boolean messages, boolean signs, boolean books, boolean itemNames) {
+    public record Filtered(boolean chat, boolean messages, boolean signs, boolean books, boolean itemNames, boolean maskForViewers) {
     }
 
     /** The note players get when nobody could hear their chat. */

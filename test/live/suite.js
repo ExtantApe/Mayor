@@ -195,6 +195,49 @@ async function filter() {
   check('removing it filters again straight away', !bots.R2.heard('sh1t again', k) && bots.R1.heard("a word we don't use here", told));
 }
 
+async function maskForViewers() {
+  section('D230: an adult\'s blocked words reach filtered players as **** (mask-for-viewers)');
+  const fpath = s.path('plugins/Mayor/filter.yml');
+  const before = fs.readFileSync(fpath, 'utf8');
+  fs.writeFileSync(fpath, before.replace(/\s*$/, '\n') + 'mask-for-viewers: true\n');
+  const r = await reload();
+  check('reload with mask-for-viewers on', r && /Reloaded/.test(r[0]), r && r[0]);
+  await lp('user R1 permission set mayor.filter.bypass true');
+  try {
+    let k = bots.R2.mark(); bots.R1.say('what the fuk now'); await sleep(1200);
+    check('a filtered player (no bypass, as an unknown one) sees the word as ****', bots.R2.heard('what the **** now', k) && !bots.R2.heard('fuk', k), bots.R2.lines(k));
+    k = bots.R2.mark(); bots.R1.say('Scunthorpe stays whole'); await sleep(1200);
+    check('clean text from an adult is unchanged', bots.R2.heard('Scunthorpe stays whole', k), bots.R2.lines(k));
+    k = bots.R2.mark(); bots.R1.say('/msg R2 oh fuk it'); await sleep(1200);
+    check('an adult\'s private message reaches a filtered player masked', bots.R2.heard('oh **** it', k) && !bots.R2.heard('fuk', k), bots.R2.lines(k));
+    await lp('user R2 permission set mayor.filter.bypass true');
+    k = bots.R2.mark(); bots.R1.say('fuk again, adults'); await sleep(1200);
+    check('another adult sees it as written', bots.R2.heard('fuk again, adults', k), bots.R2.lines(k));
+    k = bots.R2.mark(); bots.R1.say('/msg R2 fuk between adults'); await sleep(1200);
+    check('an adult\'s private message to an adult is as written', bots.R2.heard('fuk between adults', k), bots.R2.lines(k));
+    await lp('user R2 permission unset mayor.filter.bypass');
+    k = bots.R1.mark(); const own = bots.R2.mark(); bots.R2.say('fuk from a kid'); await sleep(1200);
+    check('a filtered player\'s own blocked word is still stopped and explained', !bots.R1.heard('from a kid', k) && bots.R2.heard("a word we don't use here", own), bots.R2.lines(own));
+    // Books are stored once for everyone, so an adult's blocked word is saved as ****.
+    await s.run('mt give R1 writable_book', /HRT give/);
+    for (let i = 0; i < 40 && !bots.R1.bot.inventory.slots[36]; i++) await sleep(100);
+    try {
+      await Promise.race([bots.R1.bot.writeBook(36, ['a fuk book']).catch(() => {}), sleep(2500)]);
+      await sleep(3000);
+      // The bot only sees its own copy, so ask the server what it saved.
+      const saved = await s.run('data get entity R1 Inventory[{Slot:0b}]', /R1 has the following entity data: [^\n]*/, 10000);
+      const text = saved ? saved[0] : '';
+      if (!saved) skip('an adult\'s book is saved masked', 'the server did not report the book');
+      else check('an adult\'s book is saved masked', text.includes('a **** book') && !text.includes('fuk'), text.slice(0, 200));
+    } catch (e) { skip('an adult\'s book is saved masked', 'the bot could not edit a book: ' + e.message); }
+  } finally {
+    await lp('user R1 permission unset mayor.filter.bypass');
+    await lp('user R2 permission unset mayor.filter.bypass');
+    fs.writeFileSync(fpath, before);
+    await reload();
+  }
+}
+
 async function writing() {
   section('Signs, books and item names');
   // Book: give a writable book and edit it, as the client does.
@@ -384,6 +427,7 @@ async function pausedOnBrokenStart() {
   await blockedCommands();
   await replies();
   await filter();
+  await maskForViewers();
   await writing();
   await nobodyHeard();
   await share();

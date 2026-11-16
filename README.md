@@ -2,7 +2,7 @@
 
 Chat rules for family and community Paper servers. Players hear people in the same world, plus anyone who shares a "circle" with them, so groups such as families or age groups keep their own conversations across every world.
 
-**Status:** pre-release. It passes its acceptance tests on throwaway Paper 26.2 and 26.3 servers, using protocol bots with LuckPerms: chat and private messages for every pair of players, replies, blocked commands, the word filter and its bypass, books, `/circles`, reloads, a broken config, and 20 bots chatting at once. BlueMapMini's share was tested with a stand-in plugin here; the real BlueMapMini 0.3.0 and Mayor 0.5.0 haven't been run together yet. Signs and anvil renames weren't tested. It hasn't been seen in a real game client yet, so the wording and colours haven't been checked by a person. See [the live tests](test/live/README.md) and the [test audit](docs/test-audit.md).
+**Status:** pre-release. It passes its acceptance tests on throwaway Paper 26.2 and 26.3 servers, using protocol bots with LuckPerms: chat and private messages for every pair of players, replies, blocked commands, the word filter and its bypass, masking adults' words for kids, books, `/circles`, reloads, a broken config, and 20 bots chatting at once. BlueMapMini's share was tested with a stand-in plugin here; the real BlueMapMini 0.3.0 and Mayor 0.5.0 haven't been run together yet. Signs and anvil renames weren't tested. It hasn't been seen in a real game client yet, so the wording and colours haven't been checked by a person. See [the live tests](test/live/README.md) and the [test audit](docs/test-audit.md).
 
 - Requires Paper 26.1 or newer and Java 25. Paper 1.21.11 and older aren't supported.
 - With no circles set up it changes nothing about who hears whom, so it's safe to install first and configure after.
@@ -28,7 +28,9 @@ Otherwise they can't. A world group is a world with its Nether and End (`surviva
 
 **Blocked commands.** Any command can be turned off, each with its own message. `sort` also blocks `anyplugin:sort`, in any letter case.
 
-**Word filter.** `filter.yml` lists words and phrases to keep out of chat, private messages, signs, books and item names. It matches whole words, so "class" and "Scunthorpe" are fine, and it sees through `sh1t`, `$` for s and stretched letters. Spaced-out spellings get through. Blocked text is never logged or stored: the player is told kindly and can try again. Players with `mayor.filter.bypass`, such as an adults-only group, aren't filtered anywhere.
+**Word filter.** `filter.yml` lists words and phrases to keep out of chat, private messages, signs, books and item names. It matches whole words, so "class" and "Scunthorpe" are fine, and it sees through `sh1t`, `$` for s and stretched letters. Spaced-out spellings get through. Blocked text is never logged or stored: the player is told kindly and can try again. Players with `mayor.filter.bypass`, such as an adults group, aren't filtered anywhere.
+
+**Masking for kids.** Where adults and kids play together, set `mask-for-viewers: true` in `filter.yml`. Adults (players with `mayor.filter.bypass`) write freely, and everyone else sees each blocked word in their chat and private messages as `****`, while other adults see it as written. A player without the bypass counts as filtered, so a new account is masked until someone adds it to the adults group. Signs, books and item names are stored once for everyone, so an adult's blocked words in them are saved as `****`.
 
 **Nobody heard you.** If you chat and nobody online can hear you, you get a light-hearted note, such as "A squid nods politely. It didn't understand a word." There are 75 in `quips.yml`, and you see them all before any comes round again. At most one every 3 minutes.
 
@@ -65,7 +67,7 @@ Every `/mayor` command also takes `--json <id>` at the end, for scripts and the 
 | `mayor.circles` | everyone | `/circles`. |
 | `mayor.circles.names` | everyone | Names in `/circles`. Without it, only a count. |
 | `mayor.bypass` | nobody, ops included | Reaching and being reached by everyone, for moderators. It doesn't show anyone else's chat. |
-| `mayor.filter.bypass` | nobody, ops included | Skipping the word filter everywhere it applies, for adult groups. It doesn't change who hears whom. |
+| `mayor.filter.bypass` | nobody, ops included | Skipping the word filter everywhere it applies, for adult groups. It doesn't change who hears whom. With `mask-for-viewers` on, it's also what lets a player read other adults' words as written. |
 | `mayor.admin` | ops | `/mayor`, and config warnings on joining. |
 
 ## For other plugins

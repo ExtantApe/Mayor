@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.0
+
+- **Adults' words masked for kids** (D233, D235). A new `mask-for-viewers` setting in `filter.yml`, off by default. With it on, a player with `mayor.filter.bypass` writes freely, and anyone without the bypass sees each blocked word as `****` in that player's chat and private messages, while players with the bypass see them as written. A player without the bypass counts as filtered, so one whose permissions aren't known yet is filtered too.
+- Filtered players get their own copy of the chat line, rendered the same way. A signed chat message carries its original words even when it's displayed differently, so changing only how it looks wasn't enough.
+- Signs, books and item names are stored once for everyone, so with the setting on an adult's blocked words in them are saved as `****`. Showing them per viewer is planned.
+- Players without the bypass are still stopped and told kindly when they use a blocked word, as before.
+- Tested: 48 unit tests, 6 of them new, and on throwaway Paper 26.3 with bots 75/75 live checks, 8 of them new. Signs and anvil renames weren't tested, and it hasn't been seen in a real game client.
+
 ## 0.5.0
 
 - **A new name: Mayor** (D198). The mayor sets how folks in town talk to each other. How it works is unchanged. As the owner asked (D196), no old names are kept: the package, plugin, jar, commands, permissions and data folder all use Mayor.

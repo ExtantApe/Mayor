@@ -43,6 +43,7 @@ It takes about 4 minutes. The summary lists failures and skipped checks. The ful
 | Commands | Blocked commands in plain, namespaced and mixed-case forms, unlisted ones passing, `/me` off except with bypass. |
 | Replies | `/r` with nobody to reply to, and after the other player moves out of reach. |
 | Word filter | Chat and private messages with a blocked word aren't delivered; "Scunthorpe has a classic assassin" is. |
+| Masking for kids | With `mask-for-viewers` on, an adult's blocked word reaches a player without the bypass as `****` in chat and private messages and as written to another adult; clean text is unchanged; a kid's own blocked word is still stopped; an adult's book is saved masked (checked on the server, since the bot sees only its own copy). |
 | Filter bypass | Granted with LuckPerms, a player's chat and private messages aren't filtered while another player's still are; removed, they're filtered again straight away, with no relog. |
 | Books | A clean edit is kept; a filtered one, or one in a circle-only world with no circle, is refused with an explanation. A filtered word is kept for a player with `mayor.filter.bypass`. |
 | Nobody heard you | A note from `quips.yml`, a different one next time, and none when someone heard. |

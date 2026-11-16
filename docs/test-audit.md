@@ -53,3 +53,9 @@ Each promise in the README, and the test that holds it to it. "Live" is `test/li
 **Skipped, with reasons:**
 - Sign text and anvil renames: bots can't place and edit signs or use an anvil. They're on the real-client list.
 - `ReachService` "safe from any thread": it reads the rules from one snapshot that a reload swaps in whole (a `volatile` field with `final` contents), plus the two players' own permissions and world, the same reads async chat already makes. A dedicated concurrency test would be overkill; the live load test exercises the same path from the async chat thread with 20 bots.
+
+
+## 2026-11-16: masking for kids (0.6.0, D233, D235)
+
+- **Covered:** `WordFilter.mask` (only blocked words change, phrases masked whole, the allow list, spacing kept, the mask length gives nothing away, nothing blocked gives the same text), the setting off by default and read from `filter.yml`, private messages adult to kid masked and adult to adult as written, kids still stopped. Live on 26.3: chat masked for a player without the bypass and as written for one with it, private messages both ways, clean text unchanged, a kid's own word still stopped, an adult's book saved masked (read back from the server).
+- **Skipped:** signs and anvil renames, for the same reason as before (bots can't). Item names and signs share the masking code with books. Live 26.2 wasn't rerun; the change uses no version-specific API.

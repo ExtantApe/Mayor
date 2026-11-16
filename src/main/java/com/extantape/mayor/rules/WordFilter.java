@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -19,6 +20,10 @@ public final class WordFilter {
     public static final WordFilter NONE = new WordFilter(List.of(), Set.of());
     private static final Pattern SPLIT = Pattern.compile("[^\\p{L}\\p{N}@$]+");
     private static final Pattern MARKS = Pattern.compile("\\p{M}+");
+    /** The same words {@link #SPLIT} leaves between its separators, with their places in the text. */
+    private static final Pattern WORD = Pattern.compile("[\\p{L}\\p{N}@$]+");
+    /** What a blocked word becomes, whatever its length, so the length gives nothing away. */
+    public static final String MASK = "****";
 
     private final List<List<Pattern>> phrases;
     private final Set<String> allow;
@@ -65,6 +70,49 @@ public final class WordFilter {
             }
         }
         return false;
+    }
+
+    /**
+     * The text with every blocked word or phrase replaced by {@link #MASK}, and everything else left exactly as
+     * written. Text with nothing blocked comes back unchanged. Used to show an adult's words to players who are
+     * filtered.
+     */
+    public String mask(String text) {
+        if (phrases.isEmpty() || text == null || text.isBlank()) return text;
+        List<int[]> spans = new ArrayList<>();
+        List<String> tokens = new ArrayList<>();
+        Matcher m = WORD.matcher(text);
+        while (m.find()) {
+            String token = normalize(m.group());
+            if (token.isEmpty()) continue;
+            spans.add(new int[]{m.start(), m.end()});
+            tokens.add(token);
+        }
+        boolean[] hit = new boolean[tokens.size()];
+        boolean any = false;
+        for (int start = 0; start < tokens.size(); start++) {
+            for (List<Pattern> phrase : phrases) {
+                if (start + phrase.size() > tokens.size()) continue;
+                boolean match = true;
+                for (int i = 0; i < phrase.size() && match; i++) {
+                    String token = tokens.get(start + i);
+                    match = !allow.contains(token) && phrase.get(i).matcher(token).matches();
+                }
+                if (match) {
+                    for (int i = 0; i < phrase.size(); i++) hit[start + i] = true;
+                    any = true;
+                }
+            }
+        }
+        if (!any) return text;
+        StringBuilder out = new StringBuilder(text.length());
+        int at = 0;
+        for (int i = 0; i < spans.size(); i++) {
+            if (!hit[i]) continue;
+            out.append(text, at, spans.get(i)[0]).append(MASK);
+            at = spans.get(i)[1];
+        }
+        return out.append(text.substring(at)).toString();
     }
 
     static List<String> tokens(String text) {

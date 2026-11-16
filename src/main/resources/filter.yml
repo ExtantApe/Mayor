@@ -13,6 +13,11 @@
 # This list is a starting point. Change it to suit your players.
 enabled: true
 
+# Where adults and kids play together: players with mayor.filter.bypass write freely, and everyone without it
+# sees their blocked words as ****, in chat and private messages. Signs, books and item names are saved masked
+# for everyone. A player without the bypass counts as filtered.
+mask-for-viewers: false
+
 check:
   chat: true
   private-messages: true

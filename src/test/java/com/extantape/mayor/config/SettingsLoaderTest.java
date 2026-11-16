@@ -74,4 +74,12 @@ class SettingsLoaderTest {
     void filterCanBeTurnedOff() {
         assertTrue(load(null, "enabled: false", null).settings().filter().isEmpty());
     }
+
+    @Test
+    void maskForViewersIsOffByDefaultAndReadFromFilterYml() {
+        assertFalse(load(null, null, null).settings().filtered().maskForViewers());
+        SettingsLoader.Result on = load(null, "words: [heck]\nmask-for-viewers: true\n", null);
+        assertTrue(on.ok(), on.errors().toString());
+        assertTrue(on.settings().filtered().maskForViewers());
+    }
 }
