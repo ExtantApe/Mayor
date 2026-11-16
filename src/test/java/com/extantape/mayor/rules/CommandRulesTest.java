@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 class CommandRulesTest {
     private final Reach reach = new Reach(List.of("red"), Set.of("hall"), Map.of(), List.of("_nether"));
-    private final CommandRules rules = new CommandRules(reach, WordFilter.of(List.of("heck"), List.of()), true,
+    private final CommandRules rules = new CommandRules(reach, WordFilter.of(List.of("heck"), List.of()), true, false,
             Set.of("msg", "tell", "w"), Set.of("r", "reply"), Set.of("me"),
             List.of(new CommandRules.Blocked(Set.of("/Sort", "other:only"), "<gray>Sorting stays on.")));
     private final Map<String, Subject> online = new HashMap<>();
@@ -109,5 +109,35 @@ class CommandRulesTest {
         assertEquals("chat-paused", d.key());
         assertEquals(CommandRules.Kind.PASS, rules.decide(alex, "/spawn", true, n -> null, null, id -> null).kind());
         assertNull(rules.decide(alex, "/spawn", true, n -> null, null, id -> null).key());
+    }
+
+    // D230: where adults and kids play together, an adult's message reaches a kid with blocked words masked, and an adult as written.
+    private final CommandRules masking = new CommandRules(new Reach(List.of(), Set.of(), Map.of(), List.of()),
+            WordFilter.of(List.of("heck"), List.of()), true, true, Set.of("msg", "tell"), Set.of("r"), Set.of(), List.of());
+
+    private CommandRules.Decision mask(Subject from, String line, UUID partner) {
+        return masking.decide(from, line, false, n -> online.get(n.toLowerCase()), partner,
+                id -> online.values().stream().filter(s -> s.id().equals(id)).findFirst().orElse(null));
+    }
+
+    @Test
+    void adultToKidIsMaskedAdultToAdultIsNot() {
+        Subject adult = add(player("Adult", "forest", WordFilter.BYPASS));
+        Subject adult2 = add(player("Adult2", "forest", WordFilter.BYPASS));
+        Subject kid = add(player("Kid", "forest"));
+        CommandRules.Decision d = mask(adult, "/msg Kid what the heck  now", null);
+        assertEquals(CommandRules.Kind.DELIVER, d.kind());
+        assertEquals("/msg Kid what the **** now", d.rewrite());
+        assertEquals("/r what the ****", mask(adult, "/r what the heck", kid.id()).rewrite());
+        assertNull(mask(adult, "/msg Adult2 what the heck", null).rewrite(), "an adult reads it as written");
+        assertNull(mask(adult, "/msg Kid hello", null).rewrite(), "nothing blocked, nothing changed");
+        assertEquals("filtered-message", mask(kid, "/msg Adult heck", null).key(), "kids are still stopped, as before");
+    }
+
+    @Test
+    void maskingIsOffUnlessTurnedOn() {
+        Subject adult = add(player("Adult", "forest", WordFilter.BYPASS));
+        add(player("Kid", "forest"));
+        assertNull(run(adult, "/msg Kid heck").rewrite());
     }
 }

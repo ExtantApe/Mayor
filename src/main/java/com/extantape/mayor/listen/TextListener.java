@@ -46,6 +46,13 @@ public final class TextListener implements Listener {
         if (refusal != null) {
             event.setCancelled(true);
             plugin.tell(event.getPlayer(), refusal);
+            return;
+        }
+        WordFilter mask = masker(event.getPlayer(), Settings.Filtered::signs);
+        if (mask == null) return;
+        for (int i = 0; i < lines.size(); i++) {
+            String masked = mask.mask(lines.get(i));
+            if (!masked.equals(lines.get(i))) event.line(i, Component.text(masked));
         }
     }
 
@@ -59,7 +66,28 @@ public final class TextListener implements Listener {
         if (refusal != null) {
             event.setCancelled(true);
             plugin.tell(event.getPlayer(), refusal);
+            return;
         }
+        WordFilter mask = masker(event.getPlayer(), Settings.Filtered::books);
+        if (mask == null) return;
+        boolean changed = false;
+        List<Component> pages = new ArrayList<>();
+        List<String> plainPages = new ArrayList<>();
+        for (Component page : book.pages()) {
+            String plain = PLAIN.serialize(page), masked = mask.mask(plain);
+            changed |= !masked.equals(plain);
+            pages.add(masked.equals(plain) ? page : Component.text(masked));
+            plainPages.add(masked);
+        }
+        if (event.isSigning() && book.hasTitle()) {
+            String plain = PLAIN.serialize(book.title()), masked = mask.mask(plain);
+            if (!masked.equals(plain)) { book.title(Component.text(masked)); changed = true; }
+        }
+        if (!changed) return;
+        // An unsigned book keeps plain-text pages; a signed one keeps formatted pages.
+        if (event.isSigning()) book.pages(pages);
+        else book.setPages(plainPages);
+        event.setNewBookMeta(book);
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -68,7 +96,18 @@ public final class TextListener implements Listener {
         String name = view.getRenameText();
         if (event.getResult() == null || name == null || name.isBlank() || !(view.getPlayer() instanceof Player player)) return;
         String refusal = refusal(player, List.of(name), Settings.Filtered::itemNames, "filtered-item-name");
-        if (refusal == null) return;
+        if (refusal == null) {
+            WordFilter mask = masker(player, Settings.Filtered::itemNames);
+            String masked = mask == null ? name : mask.mask(name);
+            if (masked.equals(name)) return;
+            org.bukkit.inventory.ItemStack result = event.getResult().clone();
+            org.bukkit.inventory.meta.ItemMeta meta = result.getItemMeta();
+            if (meta == null) return;
+            meta.customName(Component.text(masked));
+            result.setItemMeta(meta);
+            event.setResult(result);
+            return;
+        }
         event.setResult(null);
         long now = System.currentTimeMillis();
         Long last = anvilNotes.get(player.getUniqueId());
@@ -76,6 +115,19 @@ public final class TextListener implements Listener {
             anvilNotes.put(player.getUniqueId(), now);
             plugin.tell(player, refusal);
         }
+    }
+
+    /**
+     * With mask-for-viewers on, signs, books and item names are stored once for everyone, so an unfiltered writer's
+     * blocked words are saved as **** and filtered players never see them. Returns the filter to mask with, or null
+     * when nothing should change.
+     */
+    private WordFilter masker(Player player, java.util.function.Predicate<Settings.Filtered> check) {
+        MayorPlugin.State state = plugin.state();
+        if (state == null) return null;
+        Settings settings = state.settings();
+        if (!settings.filtered().maskForViewers() || !check.test(settings.filtered()) || !player.hasPermission(WordFilter.BYPASS)) return null;
+        return settings.filter();
     }
 
     /** The message key explaining why this text can't be written, or null if it's fine. */

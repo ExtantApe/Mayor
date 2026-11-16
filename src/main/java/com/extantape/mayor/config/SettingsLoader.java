@@ -139,14 +139,15 @@ public final class SettingsLoader {
         WordFilter filter = filterOn ? WordFilter.of(strings(FILTER, words, "words"), strings(FILTER, words, "allow")) : WordFilter.NONE;
         Settings.Filtered filtered = new Settings.Filtered(
                 bool(FILTER, words, "check.chat", true), bool(FILTER, words, "check.private-messages", true),
-                bool(FILTER, words, "check.signs", true), bool(FILTER, words, "check.books", true), bool(FILTER, words, "check.item-names", true));
+                bool(FILTER, words, "check.signs", true), bool(FILTER, words, "check.books", true), bool(FILTER, words, "check.item-names", true),
+                bool(FILTER, words, "mask-for-viewers", false));
 
         List<String> quipList = new ArrayList<>();
         for (String note : strings(QUIPS, notes, "notes")) if (!note.isBlank()) quipList.add(note);
         if (nobodyHeard.enabled() && quipList.isEmpty()) warnings.add(QUIPS + ": there are no notes, so nobody-heard stays quiet.");
 
         Reach reach = new Reach(circles, circleOnly, groupOf, suffixes);
-        CommandRules commands = new CommandRules(reach, filter, filtered.messages(),
+        CommandRules commands = new CommandRules(reach, filter, filtered.messages(), filtered.maskForViewers(),
                 Set.copyOf(strings(CONFIG, base, "private-message-commands")), Set.copyOf(strings(CONFIG, base, "reply-commands")),
                 Set.copyOf(strings(CONFIG, base, "broadcast-commands")), blocked);
         if (!errors.isEmpty()) return new Result(null, List.copyOf(errors), List.copyOf(warnings));

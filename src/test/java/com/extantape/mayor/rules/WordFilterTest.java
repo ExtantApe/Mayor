@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -69,5 +70,29 @@ class WordFilterTest {
     private static WordFilter defaults() {
         var settings = new SettingsLoader(n -> SettingsLoader.class.getResourceAsStream("/" + n)).load(null, null, null).settings();
         return settings.filter();
+    }
+
+    @Test
+    void maskHidesOnlyBlockedWordsAndKeepsTheRest() {
+        assertEquals("you ****!", small.mask("you ass!"));
+        assertEquals("**** it, ****", small.mask("Darned it, H3CK"));
+        assertEquals("well **** **** **** then", small.mask("well go away now then"), "every word of a phrase");
+        assertEquals("a first class pass", small.mask("a first class pass"));
+        assertEquals("darnation stays", small.mask("darnation stays"), "the allow list");
+        assertEquals("  ****  spaced ", small.mask("  @sss  spaced "), "spacing is kept");
+        assertEquals("**** and ****", small.mask("hééck and heck"));
+    }
+
+    @Test
+    void maskLengthGivesNothingAway() {
+        assertEquals(small.mask("ass"), small.mask("asssssssss"));
+    }
+
+    @Test
+    void maskWithNothingBlockedIsTheSameText() {
+        String s = "nothing to see";
+        assertEquals(s, small.mask(s));
+        assertEquals(s, WordFilter.NONE.mask(s));
+        assertEquals("", small.mask(""));
     }
 }
