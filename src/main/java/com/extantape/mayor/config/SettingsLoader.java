@@ -34,7 +34,7 @@ public final class SettingsLoader {
     private static final Set<String> CONFIG_KEYS = Set.of("config-version", "circles", "circle-only-worlds",
             "world-groups", "dimension-suffixes", "private-message-commands", "reply-commands", "broadcast-commands",
             "blocked-commands", "nobody-heard", "messages");
-    private static final Set<String> FILTER_KEYS = Set.of("enabled", "check", "words", "allow");
+    private static final Set<String> FILTER_KEYS = Set.of("enabled", "check", "words", "allow", "mask-for-viewers");
 
     /** The result: settings to apply, or errors explaining why there are none. Warnings either way. */
     public record Result(Settings settings, List<String> errors, List<String> warnings) {

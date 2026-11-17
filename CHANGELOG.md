@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.1
+
+- `mask-for-viewers` no longer gets a warning at start-up saying it isn't a setting. 0.6.0 read and used it all along; only the list of known settings missed it.
+- Tested: unit tests, including a check that the setting raises no warning. Not run on a live server.
+
 ## 0.6.0
 
 - **Adults' words masked for kids** (D233, D235). A new `mask-for-viewers` setting in `filter.yml`, off by default. With it on, a player with `mayor.filter.bypass` writes freely, and anyone without the bypass sees each blocked word as `****` in that player's chat and private messages, while players with the bypass see them as written. A player without the bypass counts as filtered, so one whose permissions aren't known yet is filtered too.
