@@ -81,5 +81,6 @@ class SettingsLoaderTest {
         SettingsLoader.Result on = load(null, "words: [heck]\nmask-for-viewers: true\n", null);
         assertTrue(on.ok(), on.errors().toString());
         assertTrue(on.settings().filtered().maskForViewers());
+        assertTrue(on.warnings().isEmpty(), on.warnings().toString());
     }
 }
