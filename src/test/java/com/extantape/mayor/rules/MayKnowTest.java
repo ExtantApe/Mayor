@@ -21,53 +21,62 @@ class MayKnowTest {
     private final Reach reach = new Reach(List.of("family", "adults"), Set.of("lobby"), Map.of(), List.of("_nether"));
 
     @Test
-    void noCirclesMeansEveryoneMayKnow() {
+    void noCirclesMeansOnlyTheOwnerKnows() {
         Reach off = new Reach(List.of(), Set.of(), Map.of(), List.of());
-        assertTrue(off.mayKnow(player("kid", "kids"), player("stranger", "survival"), "survival"));
+        assertFalse(off.mayKnow(player("kid", "kids"), player("stranger", "survival"), "survival", true));
+        Subject kid = player("kid", "kids");
+        assertTrue(off.mayKnow(kid, kid, "kids", false));
     }
 
     @Test
     void ownerAlwaysKnowsTheirOwn() {
         Subject kid = player("kid", "survival");
-        assertTrue(reach.mayKnow(kid, kid, "kids"));
+        assertTrue(reach.mayKnow(kid, kid, "kids", true));
     }
 
     @Test
-    void sameWorldGroupKnowsLikeChat() {
-        assertTrue(reach.mayKnow(player("kid2", "kids_nether"), player("kid", "survival"), "kids"));
+    void bothInTheGravesWorldGroupNowKnow() {
+        assertTrue(reach.mayKnow(player("kid2", "kids_nether"), player("kid", "kids"), "kids", true));
+    }
+
+    @Test
+    void ownerWhoLeftTheWorldOrIsOfflineCountsOnlyByCircle() {
+        // An adult stranger who died in the kids' world and went back, or logged off: the kids don't see the name.
+        assertFalse(reach.mayKnow(player("kid", "kids"), player("stranger", "survival", circle("adults")), "kids", true));
+        assertFalse(reach.mayKnow(player("kid", "kids"), player("stranger", "kids", circle("adults")), "kids", false));
     }
 
     @Test
     void kidElsewhereDoesNotKnowAnAdultsGrave() {
-        assertFalse(reach.mayKnow(player("kid", "kids"), player("stranger", "survival", circle("adults")), "survival"));
+        assertFalse(reach.mayKnow(player("kid", "kids"), player("stranger", "survival", circle("adults")), "survival", true));
     }
 
     @Test
     void adultInAnotherWorldDoesNotKnowAKidsGrave() {
-        assertFalse(reach.mayKnow(player("stranger", "survival", circle("adults")), player("kid", "kids"), "kids"));
+        assertFalse(reach.mayKnow(player("stranger", "survival", circle("adults")), player("kid", "kids"), "kids", true));
     }
 
     @Test
     void sharedCircleKnowsAcrossWorlds() {
-        assertTrue(reach.mayKnow(player("mum", "survival", circle("family")), player("kid", "kids", circle("family")), "kids"));
+        assertTrue(reach.mayKnow(player("mum", "survival", circle("family")), player("kid", "kids", circle("family")), "kids", true));
     }
 
     @Test
     void circleOnlyWorldNeedsASharedCircle() {
-        assertFalse(reach.mayKnow(player("a", "lobby"), player("b", "lobby"), "lobby"));
-        assertTrue(reach.mayKnow(player("a", "lobby", circle("family")), player("b", "lobby", circle("family")), "lobby"));
+        assertFalse(reach.mayKnow(player("a", "lobby"), player("b", "lobby"), "lobby", true));
+        assertTrue(reach.mayKnow(player("a", "lobby", circle("family")), player("b", "lobby", circle("family")), "lobby", true));
     }
 
     @Test
     void bypassOnEitherSideKnows() {
-        assertTrue(reach.mayKnow(player("admin", "survival", Reach.BYPASS), player("kid", "kids"), "kids"));
-        assertTrue(reach.mayKnow(player("kid", "kids_nether"), player("admin", "survival", Reach.BYPASS), "survival"));
+        assertTrue(reach.mayKnow(player("admin", "survival", Reach.BYPASS), player("kid", "kids"), "kids", true));
+        assertTrue(reach.mayKnow(player("kid", "kids_nether"), player("admin", "survival", Reach.BYPASS), "survival", true));
     }
 
     @Test
     void unknownOwnerFailsClosed() {
-        assertFalse(reach.mayKnow(player("kid", "kids"), null, "kids"));
-        assertFalse(reach.mayKnow(player("kid", "kids"), player("x", "kids"), null));
+        assertFalse(reach.mayKnow(player("kid", "kids"), null, "kids", true));
+        assertFalse(reach.mayKnow(player("kid", "kids"), player("x", "kids"), null, true));
     }
 
     @Test
@@ -80,8 +89,9 @@ class MayKnowTest {
         again.load();
         Subject recalled = again.recall(kid.id());
         assertNotNull(recalled);
-        assertTrue(reach.mayKnow(player("mum", "survival", circle("family")), recalled, "kids"));
-        assertFalse(reach.mayKnow(player("stranger", "survival", circle("adults")), recalled, "kids"));
+        assertTrue(reach.mayKnow(player("mum", "survival", circle("family")), recalled, "kids", false));
+        assertFalse(reach.mayKnow(player("stranger", "survival", circle("adults")), recalled, "kids", false));
+        assertFalse(reach.mayKnow(player("kid2", "kids"), recalled, "kids", false), "offline, no shared circle: no");
         assertNull(again.recall(UUID.randomUUID()));
     }
 

@@ -212,7 +212,7 @@ public final class MayorPlugin extends JavaPlugin implements ReachService {
         try {
             Player online = Bukkit.getPlayer(owner);
             Subject who = online != null ? Subject.of(online) : known == null ? null : known.recall(owner);
-            return s.settings().reach().mayKnow(Subject.of(viewer), who, world);
+            return s.settings().reach().mayKnow(Subject.of(viewer), who, world, online != null);
         } catch (RuntimeException e) {
             return false;
         }

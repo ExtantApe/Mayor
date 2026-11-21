@@ -2,9 +2,9 @@
 
 ## 0.7.0
 
-- **Who may know whose it is** (D231). `ReachService.mayKnow(viewer, owner, world)` tells another plugin, such as LanternGraves, whether a player may see the owner's name on something they left behind. Same rules as chat, and it fails closed for anyone Mayor has never seen.
+- **Who may know whose it is** (D231). `ReachService.mayKnow(viewer, owner, world)` tells another plugin, such as LanternGraves, whether a player may see the owner's name on something they left behind. Stricter than chat, so it fails closed: the owner, either side's bypass, a shared circle, or both players in that world's group right now. Offline owners count only through a circle or bypass; with no circles set up, nobody but the owner.
 - Mayor remembers each player's circles and bypass in `known-players.yml` when they join and leave, so the answer works while the owner is offline. A broken file is moved to `known-players.yml.bak` and nobody offline counts as known until they're seen again.
-- Tested: unit tests for kids and adults in separate worlds, a shared family circle, a circle-only world, bypass, an unknown owner, and the file surviving a restart or breaking. Not run on a live server.
+- Tested: unit tests for kids and adults in separate worlds, an adult who left the kids' world or went offline, a shared family circle, a circle-only world, bypass, no circles, an unknown owner, and the file surviving a restart or breaking. Not run on a live server.
 
 ## 0.6.1
 

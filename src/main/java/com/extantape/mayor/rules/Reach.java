@@ -124,18 +124,21 @@ public final class Reach {
 
     /**
      * Whether {@code viewer} may know who {@code owner} is from something the owner left in {@code world}, such as a
-     * grave's name (owner, 2026-11-16, D231). The chat rules decide: with no circles everyone may; otherwise the
-     * owner themself, either side's mayor.bypass, a viewer standing in that world's group (unless it's circle-only),
-     * or a shared circle. An owner Mayor knows nothing about ({@code owner} null) counts as no, so it fails closed.
+     * grave's name (owner, 2026-11-16, D231). Stricter than chat, so it fails closed: the owner themself, the viewer's
+     * mayor.bypass, the owner's mayor.bypass, a shared circle, or both players standing in that world's group right now
+     * (unless it's circle-only). An owner who's offline counts only through a circle or bypass, since where they
+     * stand isn't known. With no circles set up, nobody else may: there are no groups to follow. An owner Mayor knows
+     * nothing about ({@code owner} null) counts as no.
+     *
+     * @param ownerOnline whether {@code owner} describes a player online now, so their world is real
      */
-    public boolean mayKnow(Subject viewer, Subject owner, String world) {
-        if (!active()) return true;
+    public boolean mayKnow(Subject viewer, Subject owner, String world, boolean ownerOnline) {
         if (owner != null && viewer.id().equals(owner.id())) return true;
-        if (viewer.has(BYPASS)) return true;
-        if (owner == null || world == null) return false;
-        if (owner.has(BYPASS)) return true;
+        if (!active() || owner == null || world == null) return false;
+        if (viewer.has(BYPASS) || owner.has(BYPASS)) return true;
+        if (sharedCircle(viewer, owner) != null) return true;
         String here = group(world);
-        if (here.equals(group(viewer.world())) && !circleOnly.contains(here)) return true;
-        return sharedCircle(viewer, owner) != null;
+        return ownerOnline && !circleOnly.contains(here)
+                && here.equals(group(viewer.world())) && here.equals(group(owner.world()));
     }
 }
