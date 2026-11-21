@@ -1,0 +1,104 @@
+package com.extantape.mayor.rules;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.logging.Logger;
+
+import static com.extantape.mayor.rules.Players.circle;
+import static com.extantape.mayor.rules.Players.player;
+import static org.junit.jupiter.api.Assertions.*;
+
+/** D231: who may know whose grave it is. Kids and adults in separate worlds, a mixed circle, and no rules at all. */
+class MayKnowTest {
+    // kids play in "kids" (with its nether), adults in "survival"; "family" is the circle parents and kids share.
+    private final Reach reach = new Reach(List.of("family", "adults"), Set.of("lobby"), Map.of(), List.of("_nether"));
+
+    @Test
+    void noCirclesMeansEveryoneMayKnow() {
+        Reach off = new Reach(List.of(), Set.of(), Map.of(), List.of());
+        assertTrue(off.mayKnow(player("kid", "kids"), player("stranger", "survival"), "survival"));
+    }
+
+    @Test
+    void ownerAlwaysKnowsTheirOwn() {
+        Subject kid = player("kid", "survival");
+        assertTrue(reach.mayKnow(kid, kid, "kids"));
+    }
+
+    @Test
+    void sameWorldGroupKnowsLikeChat() {
+        assertTrue(reach.mayKnow(player("kid2", "kids_nether"), player("kid", "survival"), "kids"));
+    }
+
+    @Test
+    void kidElsewhereDoesNotKnowAnAdultsGrave() {
+        assertFalse(reach.mayKnow(player("kid", "kids"), player("stranger", "survival", circle("adults")), "survival"));
+    }
+
+    @Test
+    void adultInAnotherWorldDoesNotKnowAKidsGrave() {
+        assertFalse(reach.mayKnow(player("stranger", "survival", circle("adults")), player("kid", "kids"), "kids"));
+    }
+
+    @Test
+    void sharedCircleKnowsAcrossWorlds() {
+        assertTrue(reach.mayKnow(player("mum", "survival", circle("family")), player("kid", "kids", circle("family")), "kids"));
+    }
+
+    @Test
+    void circleOnlyWorldNeedsASharedCircle() {
+        assertFalse(reach.mayKnow(player("a", "lobby"), player("b", "lobby"), "lobby"));
+        assertTrue(reach.mayKnow(player("a", "lobby", circle("family")), player("b", "lobby", circle("family")), "lobby"));
+    }
+
+    @Test
+    void bypassOnEitherSideKnows() {
+        assertTrue(reach.mayKnow(player("admin", "survival", Reach.BYPASS), player("kid", "kids"), "kids"));
+        assertTrue(reach.mayKnow(player("kid", "kids_nether"), player("admin", "survival", Reach.BYPASS), "survival"));
+    }
+
+    @Test
+    void unknownOwnerFailsClosed() {
+        assertFalse(reach.mayKnow(player("kid", "kids"), null, "kids"));
+        assertFalse(reach.mayKnow(player("kid", "kids"), player("x", "kids"), null));
+    }
+
+    @Test
+    void offlineOwnerIsRecalledFromWhatMayorSaw(@TempDir Path dir) {
+        KnownPlayers known = new KnownPlayers(dir, Logger.getAnonymousLogger());
+        Subject kid = player("kid", "kids", circle("family"));
+        assertTrue(known.remember(kid, reach.circles()));
+        known.save();
+        KnownPlayers again = new KnownPlayers(dir, Logger.getAnonymousLogger());
+        again.load();
+        Subject recalled = again.recall(kid.id());
+        assertNotNull(recalled);
+        assertTrue(reach.mayKnow(player("mum", "survival", circle("family")), recalled, "kids"));
+        assertFalse(reach.mayKnow(player("stranger", "survival", circle("adults")), recalled, "kids"));
+        assertNull(again.recall(UUID.randomUUID()));
+    }
+
+    @Test
+    void rememberReportsOnlyChanges(@TempDir Path dir) {
+        KnownPlayers known = new KnownPlayers(dir, Logger.getAnonymousLogger());
+        Subject kid = player("kid", "kids", circle("family"));
+        assertTrue(known.remember(kid, reach.circles()));
+        assertFalse(known.remember(kid, reach.circles()));
+    }
+
+    @Test
+    void brokenFileIsMovedAsideAndNobodyIsKnown(@TempDir Path dir) throws Exception {
+        Files.writeString(dir.resolve(KnownPlayers.FILE), "- a list, not a map\n");
+        KnownPlayers known = new KnownPlayers(dir, Logger.getAnonymousLogger());
+        known.load();
+        assertTrue(Files.exists(dir.resolve(KnownPlayers.FILE + ".bak")));
+        assertNull(known.recall(UUID.nameUUIDFromBytes("kid".getBytes())));
+    }
+}

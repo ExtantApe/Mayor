@@ -83,6 +83,8 @@ if (rules == null || rules.mayReach(from, to)) { /* send it */ }
 
 `sharesCircle(viewerHas, to)` is for a viewer who isn't in game, such as someone on a web map. It's true only when they share a circle with `to`. World, world group and bypass don't count, and with no circles set up it's always false. The caller passes the viewer's permissions, read while they're offline, and anything it can't check should answer false.
 
+`mayKnow(viewer, owner, world)` says whether a player may know who left something in a world, such as a grave's name. It follows the chat rules: with no circles everyone may, and otherwise the owner, either side's `mayor.bypass`, a viewer in that world's group (unless it's circle-only) or a shared circle. It works while the owner is offline, from what Mayor last saw of them, and answers false for anyone Mayor has never seen. For that, Mayor keeps `known-players.yml`: each player's ID with the circle names they held and whether they had `mayor.bypass`, updated when they join and leave. Nothing else about them is stored.
+
 ## Limits
 
 - Signs are readable by anyone who walks past, and a book or named item can be carried to another world. Mayor only checks them when they're written.

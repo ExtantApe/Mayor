@@ -121,4 +121,21 @@ public final class Reach {
         }
         return false;
     }
+
+    /**
+     * Whether {@code viewer} may know who {@code owner} is from something the owner left in {@code world}, such as a
+     * grave's name (owner, 2026-11-16, D231). The chat rules decide: with no circles everyone may; otherwise the
+     * owner themself, either side's mayor.bypass, a viewer standing in that world's group (unless it's circle-only),
+     * or a shared circle. An owner Mayor knows nothing about ({@code owner} null) counts as no, so it fails closed.
+     */
+    public boolean mayKnow(Subject viewer, Subject owner, String world) {
+        if (!active()) return true;
+        if (owner != null && viewer.id().equals(owner.id())) return true;
+        if (viewer.has(BYPASS)) return true;
+        if (owner == null || world == null) return false;
+        if (owner.has(BYPASS)) return true;
+        String here = group(world);
+        if (here.equals(group(viewer.world())) && !circleOnly.contains(here)) return true;
+        return sharedCircle(viewer, owner) != null;
+    }
 }

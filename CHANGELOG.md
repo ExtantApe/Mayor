@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.0
+
+- **Who may know whose it is** (D231). `ReachService.mayKnow(viewer, owner, world)` tells another plugin, such as LanternGraves, whether a player may see the owner's name on something they left behind. Same rules as chat, and it fails closed for anyone Mayor has never seen.
+- Mayor remembers each player's circles and bypass in `known-players.yml` when they join and leave, so the answer works while the owner is offline. A broken file is moved to `known-players.yml.bak` and nobody offline counts as known until they're seen again.
+- Tested: unit tests for kids and adults in separate worlds, a shared family circle, a circle-only world, bypass, an unknown owner, and the file surviving a restart or breaking. Not run on a live server.
+
 ## 0.6.1
 
 - `mask-for-viewers` no longer gets a warning at start-up saying it isn't a setting. 0.6.0 read and used it all along; only the list of known settings missed it.
