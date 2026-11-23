@@ -20,4 +20,13 @@ public interface ReachService {
      * it should answer false for anything it can't check. Safe from any thread.
      */
     boolean sharesCircle(java.util.function.Predicate<String> viewerHas, Player to);
+
+    /**
+     * Whether {@code viewer} may know who {@code owner} is from something the owner left in {@code world}, such as a
+     * grave's name (D231). Stricter than chat: the owner, either side's bypass, a shared circle, or both standing in
+     * that world's group now. An offline owner counts only through a circle or bypass, from what Mayor last saw of
+     * them. False with no circles set up, for an owner Mayor has never seen, or while chat is paused. Call it from
+     * the main thread.
+     */
+    boolean mayKnow(Player viewer, java.util.UUID owner, String world);
 }

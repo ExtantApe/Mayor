@@ -48,6 +48,8 @@ public final class MayorPlugin extends JavaPlugin implements ReachService {
     private volatile List<String> problems = List.of();
     /** Who each player last messaged or was messaged by, for /r. */
     private final Map<UUID, UUID> partners = new ConcurrentHashMap<>();
+    /** Each player's circles as last seen, for rules about someone offline (D231). */
+    private com.extantape.mayor.rules.KnownPlayers known;
 
     @Override
     public void onEnable() {
@@ -56,6 +58,8 @@ public final class MayorPlugin extends JavaPlugin implements ReachService {
         }
         Settings defaults = new SettingsLoader(this::getResource).load(null, null, null).settings();
         fallback = new State(defaults, new Messages(defaults.messages()), new Quips(List.of(), 0, new Random()));
+        known = new com.extantape.mayor.rules.KnownPlayers(getDataFolder().toPath(), getLogger());
+        known.load();
         reload(Bukkit.getConsoleSender());
 
         var plugins = getServer().getPluginManager();
@@ -102,6 +106,7 @@ public final class MayorPlugin extends JavaPlugin implements ReachService {
                 new Quips(settings.quips(), settings.nobodyHeard().cooldownSeconds(), new Random()));
         problems = result.warnings();
         registerCirclePermissions(settings.reach());
+        rememberOnline();
         Reach reach = settings.reach();
         getLogger().info(reach.active()
                 ? "Chat rules are on, with " + reach.circles().size() + (reach.circles().size() == 1 ? " circle. " : " circles. ") + settings.filterSummary()
@@ -118,6 +123,22 @@ public final class MayorPlugin extends JavaPlugin implements ReachService {
                 plugins.addPermission(new Permission(node, "Puts a player in the " + circle + " circle.", PermissionDefault.FALSE));
             }
         }
+    }
+
+    /** Records what each online player holds now, and saves if anything changed. */
+    public void rememberOnline() {
+        State s = state;
+        if (s == null || known == null) return;
+        boolean changed = false;
+        for (Player p : Bukkit.getOnlinePlayers()) changed |= known.remember(Subject.of(p), s.settings().reach().circles());
+        if (changed) known.save();
+    }
+
+    /** Records one player as they are now, and saves if anything changed. */
+    public void remember(Player player) {
+        State s = state;
+        if (s == null || known == null) return;
+        if (known.remember(Subject.of(player), s.settings().reach().circles())) known.save();
     }
 
     /** The current rules, or null while chat is paused because the config couldn't be read. */
@@ -179,6 +200,19 @@ public final class MayorPlugin extends JavaPlugin implements ReachService {
         if (s == null || viewerHas == null || to == null) return false;
         try {
             return s.settings().reach().reachesWhileAway(viewerHas, Subject.of(to));
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean mayKnow(Player viewer, UUID owner, String world) {
+        State s = state;
+        if (s == null || viewer == null || owner == null) return false;
+        try {
+            Player online = Bukkit.getPlayer(owner);
+            Subject who = online != null ? Subject.of(online) : known == null ? null : known.recall(owner);
+            return s.settings().reach().mayKnow(Subject.of(viewer), who, world, online != null);
         } catch (RuntimeException e) {
             return false;
         }

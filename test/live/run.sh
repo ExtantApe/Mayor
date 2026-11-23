@@ -56,6 +56,8 @@ motd=Mayor throwaway test server
 PROPS
 cp "$WORK/ViaVersion.jar" "$WORK/ViaBackwards.jar" "$WORK/LuckPerms.jar" "$HELPER" "$FAKEMAP" "$SERVER/plugins/"
 cp "$JAR" "$SERVER/plugins/Mayor.jar"
+# Optional: a LanternGraves jar, for the graves part (D231). Without it, that part is skipped.
+if [ -n "${MAYOR_LG_JAR:-}" ]; then cp "$MAYOR_LG_JAR" "$SERVER/plugins/LanternGraves.jar"; fi
 cd "$HERE"
 LOG=$WORK/$NAME.log
 echo "== Running the suite (log: $LOG)"

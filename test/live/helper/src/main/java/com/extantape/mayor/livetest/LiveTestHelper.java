@@ -31,9 +31,13 @@ public final class LiveTestHelper extends JavaPlugin implements Listener {
         if (event.getEntity() instanceof Player) event.setCancelled(true);
     }
 
+    /** Players a test killed on purpose (mt grave), so their death isn't reported as a bad spawn. */
+    private final java.util.Set<String> planned = new java.util.HashSet<>();
+
     @EventHandler
     public void onDeath(PlayerDeathEvent event) {
-        getLogger().info("HRT death " + event.getPlayer().getName());
+        String n = event.getPlayer().getName();
+        getLogger().info((planned.remove(n) ? "HRT planned death " : "HRT death ") + n);
     }
 
     @Override
@@ -58,6 +62,26 @@ public final class LiveTestHelper extends JavaPlugin implements Listener {
                                 return 0;
                             }
                             p.teleportAsync(w.getSpawnLocation()).thenAccept(ok -> getLogger().info("HRT tp " + p.getName() + " " + w.getName() + " " + ok));
+                            return 1;
+                        }))))
+                // mt grave <player> <offset>: moves the player offset blocks east of their world's spawn, gives them a
+                // stick so there's something to leave, and kills them there, for LanternGraves' grave tests (D231).
+                .then(Commands.literal("grave").then(Commands.argument("player", StringArgumentType.word())
+                        .then(Commands.argument("offset", com.mojang.brigadier.arguments.IntegerArgumentType.integer(-30, 30)).executes(ctx -> {
+                            Player p = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "player"));
+                            if (p == null) {
+                                getLogger().info("HRT grave FAILED");
+                                return 0;
+                            }
+                            int off = com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "offset");
+                            org.bukkit.Location at = p.getWorld().getSpawnLocation().clone().add(off, 0, 0);
+                            p.teleport(at);
+                            p.getInventory().addItem(new org.bukkit.inventory.ItemStack(org.bukkit.Material.STICK));
+                            planned.add(p.getName());
+                            Bukkit.getScheduler().runTaskLater(this, () -> {
+                                p.setHealth(0);
+                                getLogger().info("HRT grave " + p.getName() + " " + p.getWorld().getName() + " " + at.getBlockX() + " " + at.getBlockZ());
+                            }, 5L);
                             return 1;
                         }))))
                 .then(Commands.literal("worlds").executes(ctx -> {
