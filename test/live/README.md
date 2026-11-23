@@ -48,6 +48,7 @@ It takes about 4 minutes. The summary lists failures and skipped checks. The ful
 | Books | A clean edit is kept; a filtered one, or one in a circle-only world with no circle, is refused with an explanation. A filtered word is kept for a player with `mayor.filter.bypass`. |
 | Nobody heard you | A note from `quips.yml`, a different one next time, and none when someone heard. |
 | Share (mocked) | Recipients filtered exactly as chat, and cancelled for a no-circle sender in a circle-only world. |
+| Graves (D231) | With a LanternGraves jar (`MAYOR_LG_JAR`), real graves from planned deaths: each bot sees the owner's name or "Grave" exactly as an independent model of `mayKnow` says, with the owner in the same group, moved away, sharing a circle, offline, and in a circle-only world. Skipped without the jar. |
 | LuckPerms | A circle granted or removed takes effect with no relog. |
 | Config | A broken reload keeps the old rules; a broken config at startup pauses chat and private messages until it's fixed and reloaded. |
 | Load | 20 more bots, 300 lines in about 15 seconds: all delivered within their circle, TPS, chat latency, no kicks. |

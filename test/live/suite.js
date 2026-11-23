@@ -403,6 +403,74 @@ async function pausedOnBrokenStart() {
   s.cmd('deop R2');
 }
 
+// D231: who sees whose grave. An independent model of Mayor's mayKnow, to compare against: the owner, either side's
+// bypass, a shared circle, or (owner online) both standing in the grave's world group, unless it's circle-only.
+function knows(viewer, owner, graveWorld, ownerOnline) {
+  if (viewer === owner) return true;
+  if (PEOPLE[viewer].bypass || PEOPLE[owner].bypass) return true;
+  if (shares(viewer, owner)) return true;
+  const g = group(graveWorld);
+  return ownerOnline && !circleOnly(graveWorld) && g === group(PEOPLE[viewer].world) && g === group(PEOPLE[owner].world);
+}
+
+/** The grave labels a bot can see now, as {x, text}: LanternGraves shows each player either the name or "Grave". */
+function graveLabels(b) {
+  return Object.values(b.bot.entities).filter((e) => /text_display/.test(e.name || ''))
+    .map((e) => ({ x: Math.floor(e.position.x), text: JSON.stringify(e.metadata || []) }))
+    .filter((l) => /grave|Grave/.test(l.text));
+}
+
+async function moveTo(n, w) {
+  PEOPLE[n].world = w;
+  await s.run(`mt tp ${n} ${w}`, new RegExp(`HRT tp ${n} ${w} true`), 10000);
+}
+
+async function grave(n, offset) {
+  const w = PEOPLE[n].world;
+  const m = await s.run(`mt grave ${n} ${offset}`, new RegExp(`HRT grave ${n} (\\S+) (-?\\d+) -?\\d+`), 10000);
+  await sleep(2500); // respawn
+  await moveTo(n, w); // back where they were
+  return m ? +m[2] : null;
+}
+
+/** Checks what each viewer sees on the grave at x, against the model, after LanternGraves' once-a-second refresh. */
+async function seen(owner, graveWorld, x, viewers, ownerOnline, why) {
+  await sleep(2500);
+  for (const v of viewers) {
+    const here = graveLabels(bots[v]).filter((l) => Math.abs(l.x - x) <= 1);
+    const named = here.some((l) => l.text.includes(`${owner}'s grave`));
+    const anon = here.some((l) => !l.text.includes("'s grave"));
+    const want = knows(v, owner, graveWorld, ownerOnline);
+    check(`${why}: ${v} sees ${want ? `${owner}'s name` : '"Grave"'}`, here.length === 1 && named === want && anon === !want,
+      here.map((l) => l.text.slice(0, 80)).join(' | ') || 'no label');
+  }
+}
+
+async function graves() {
+  section('D231: LanternGraves shows a grave\'s owner only to players Mayor\'s groups allow');
+  if (!/\[LanternGraves\] Enabling/.test(s.log)) { skip('graves', 'no LanternGraves jar (set MAYOR_LG_JAR)'); return; }
+  const start = Object.fromEntries(NAMES.map((n) => [n, PEOPLE[n].world]));
+  // Everyone who looks gathers in meadow (the farm group).
+  for (const n of ['N3', 'N1', 'R1', 'M1', 'R2']) await moveTo(n, 'meadow');
+  await sleep(1500);
+  const x1 = await grave('N3', 6);
+  check('a grave is made for a planned death', x1 !== null && /HRT planned death N3/.test(s.log));
+  await seen('N3', 'meadow', x1, ['N3', 'N1', 'R1', 'M1', 'R2'], true, 'owner in the same group (farm)');
+  await moveTo('N3', 'world');
+  await seen('N3', 'meadow', x1, ['N1', 'R1', 'M1', 'R2'], true, 'owner moved to another group');
+  const x2 = await grave('R2', -6);
+  await moveTo('R2', 'world');
+  await seen('R2', 'meadow', x2, ['N1', 'R1', 'M1'], true, 'shared circle, owner elsewhere');
+  bots.R2.quit(); await sleep(2500);
+  await seen('R2', 'meadow', x2, ['N1', 'R1', 'M1'], false, 'owner offline');
+  bots.R2 = new Bot('R2', +port); await bots.R2.spawned; await moveTo('R2', 'meadow');
+  // Circle-only world: being there together isn't enough.
+  await moveTo('N2', 'hall'); await moveTo('B2', 'hall'); await moveTo('M1', 'hall');
+  const x3 = await grave('N2', 4);
+  await seen('N2', 'hall', x3, ['N2', 'B2', 'M1'], true, 'circle-only world');
+  for (const n of NAMES) await moveTo(n, start[n]);
+}
+
 (async () => {
   s = new Server(dir, jar);
   await s.start();
@@ -433,6 +501,7 @@ async function pausedOnBrokenStart() {
   await share();
   await liveCircles();
   await adminCheck();
+  await graves();
   await brokenReload();
   await load();
   await pausedOnBrokenStart();
