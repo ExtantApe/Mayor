@@ -36,6 +36,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * admins are told why, until it's fixed and reloaded. A broken reload keeps the rules that were working.
  */
 public final class MayorPlugin extends JavaPlugin implements ReachService {
+    private com.extantape.mayor.listen.PresenceListener presence;
+
     public static final String ADMIN = "mayor.admin";
 
     /** Everything that changes on reload, swapped in one go so the chat thread never sees half of it. */
@@ -67,6 +69,9 @@ public final class MayorPlugin extends JavaPlugin implements ReachService {
         plugins.registerEvents(new CommandListener(this), this);
         plugins.registerEvents(new TextListener(this), this);
         plugins.registerEvents(new PlayerListener(this), this);
+        presence = new com.extantape.mayor.listen.PresenceListener(this);
+        plugins.registerEvents(presence, this);
+        Bukkit.getScheduler().runTaskTimer(this, presence::refresh, 40L, 40L);
         // Only touch a share event's class when its plugin is installed. The hooks are the only classes that name them.
         if (plugins.getPlugin("BlueMapMini") != null) {
             try {
@@ -106,6 +111,7 @@ public final class MayorPlugin extends JavaPlugin implements ReachService {
                 new Quips(settings.quips(), settings.nobodyHeard().cooldownSeconds(), new Random()));
         problems = result.warnings();
         registerCirclePermissions(settings.reach());
+        if (presence != null) presence.refresh();
         rememberOnline();
         Reach reach = settings.reach();
         getLogger().info(reach.active()

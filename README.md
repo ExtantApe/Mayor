@@ -2,7 +2,7 @@
 
 Chat rules for family and community Paper servers. Players hear people in the same world, plus anyone who shares a "circle" with them, so groups such as families or age groups keep their own conversations across every world.
 
-**Status:** pre-release. It passes its acceptance tests on throwaway Paper 26.2 and 26.3 servers, using protocol bots with LuckPerms: chat and private messages for every pair of players, replies, blocked commands, the word filter and its bypass, masking adults' words for kids, books, `/circles`, reloads, a broken config, and 20 bots chatting at once. BlueMapMini's share was tested with a stand-in plugin here; the real BlueMapMini 0.3.0 and Mayor 0.5.0 haven't been run together yet. Signs and anvil renames weren't tested. It hasn't been seen in a real game client yet, so the wording and colours haven't been checked by a person. See [the live tests](test/live/README.md) and the [test audit](docs/test-audit.md).
+**Status:** pre-release. It passes its acceptance tests on throwaway Paper 26.2 and 26.3 servers, using protocol bots with LuckPerms: chat and private messages for every pair of players, who sees whom in the player list and join messages (`presence: reach`), replies, blocked commands, the word filter and its bypass, masking adults' words for kids, books, `/circles`, reloads, a broken config, and 20 bots chatting at once. BlueMapMini's share was tested with a stand-in plugin here; the real BlueMapMini 0.3.0 and Mayor 0.5.0 haven't been run together yet. Signs and anvil renames weren't tested. It hasn't been seen in a real game client yet, so the wording and colours haven't been checked by a person. See [the live tests](test/live/README.md) and the [test audit](docs/test-audit.md).
 
 - Requires Paper 26.1 or newer and Java 25. Paper 1.21.11 and older aren't supported.
 - With no circles set up it changes nothing about who hears whom, so it's safe to install first and configure after.
@@ -25,6 +25,8 @@ Otherwise they can't. A world group is a world with its Nether and End (`surviva
 - `/r` and `/reply` are checked again when you reply, because the other player may have moved.
 - Commands that would reach the whole server, `/me` and `/teammsg` by default, are off while circles are in use.
 - BlueMapMini's `/hud share`, if BlueMapMini is installed, goes only to players who could hear you in chat. BlueMapMini keeps sharing off until Mayor is 0.5.0 or newer.
+
+**Who's online (optional).** With `presence: reach` in `config.yml`, the player list (Tab) and join and leave messages follow the same rule: you only see players you could chat with. A kid and an adult who share no circle don't see each other online. It's checked on join, leave and world change, and every two seconds for circle changes, so no relog is needed. If the config can't be read at startup, nobody is shown to anyone until it's fixed. The default, `presence: everyone`, leaves both as in vanilla. Death and advancement messages and a player's name above their head aren't covered.
 
 **Blocked commands.** Any command can be turned off, each with its own message. `sort` also blocks `anyplugin:sort`, in any letter case.
 

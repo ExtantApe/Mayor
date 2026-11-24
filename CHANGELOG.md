@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.0
+
+- **Who's online follows the rules, optionally** (D283). With `presence: reach` in `config.yml`, the player list (Tab) and join and leave messages show a player only to people they could chat with. A kid and an adult who share no circle don't see each other online, including in a circle-only lobby. Checked on join, leave and world change, and every two seconds for circle changes, so no relog is needed. If the config can't be read at startup, nobody is shown to anyone until it's fixed. The default, `presence: everyone`, changes nothing. A typo in `presence` is a config error.
+- Not covered: death and advancement messages, and the name above a player's head.
+- Tested: unit tests for a circle-only station, a shared circle, no circle, bypass, the default and paused rules; config loading for the default, `reach`, a typo and `reach` with no circles. Bots on throwaway Paper 26.3 (84/84) checked the player list for every pair of 8 players, who saw a player leave and rejoin, a circle granted and removed with LuckPerms, switching back to `everyone`, and nobody listed while paused. Not yet seen in a real game client.
+
 ## 0.7.0
 
 - **Who may know whose it is** (D231). `ReachService.mayKnow(viewer, owner, world)` tells another plugin, such as LanternGraves, whether a player may see the owner's name on something they left behind. Stricter than chat, so it fails closed: the owner, either side's bypass, a shared circle, or both players in that world's group right now. Offline owners count only through a circle or bypass; with no circles set up, nobody but the owner.

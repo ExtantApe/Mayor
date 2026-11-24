@@ -307,6 +307,49 @@ async function liveCircles() {
   check('and stops as soon as it is removed', !heard.N3.includes('R1'), heard.N3);
 }
 
+// D283: with presence: reach, the player list and join messages follow chat reach.
+// The protocol sends listed as a number (1 or 0); an entry with no listed update yet counts as listed.
+const listedTo = (viewer, other) => { const p = bots[viewer].bot.players[other]; return !!p && (p.listed === undefined || Boolean(p.listed)); };
+function presenceBad(want) {
+  const bad = [];
+  for (const a of NAMES) for (const b of NAMES) {
+    if (a === b || !bots[a] || !bots[b]) continue;
+    if (listedTo(a, b) !== want(a, b)) bad.push(`${a} sees ${b}: want ${want(a, b)}`);
+  }
+  return bad;
+}
+
+async function presence() {
+  section('D283: presence: reach, the player list and join messages follow chat reach');
+  s.writeConfig('config.yml', CONFIG + 'presence: reach\n');
+  check('reload applies presence: reach', /Reloaded/.test((await reload() || [''])[0]));
+  await sleep(3000);
+  let bad = presenceBad(reaches);
+  check(`each of ${NAMES.length} players lists exactly the players they can reach`, bad.length === 0, bad.slice(0, 12).join('; '));
+  const marks = Object.fromEntries(all().map((b) => [b.name, b.mark()]));
+  bots.N2.quit(); await sleep(1500);
+  const sawLeave = all().filter((b) => b.name !== 'N2' && b.heard('N2 left the game', marks[b.name])).map((b) => b.name).sort();
+  const wantSee = NAMES.filter((b) => b !== 'N2' && reaches(b, 'N2')).sort();
+  check('only players who can reach N2 see that N2 left', JSON.stringify(sawLeave) === JSON.stringify(wantSee), `saw ${sawLeave}, want ${wantSee}`);
+  const m2 = Object.fromEntries(all().filter((b) => b.name !== 'N2').map((b) => [b.name, b.mark()]));
+  bots.N2 = new Bot('N2', +port); await bots.N2.spawned; await sleep(500);
+  await s.run('mt tp N2 hall', /HRT tp N2 hall true/, 10000); await sleep(3000);
+  const sawJoin = Object.keys(m2).filter((n) => bots[n].heard('N2 joined the game', m2[n])).sort();
+  check('only players who can reach N2 see that N2 joined', JSON.stringify(sawJoin) === JSON.stringify(wantSee), `saw ${sawJoin}, want ${wantSee}`);
+  bad = presenceBad(reaches);
+  check('after the rejoin, the lists still match reach', bad.length === 0, bad.slice(0, 12).join('; '));
+  await lp('user N2 permission set mayor.circle.blue true'); PEOPLE.N2.circles = ['blue'];
+  await sleep(3000);
+  check('a circle granted with LuckPerms shows the circle within seconds, no relog', listedTo('N2', 'B1') && listedTo('B1', 'N2'));
+  await lp('user N2 permission unset mayor.circle.blue'); PEOPLE.N2.circles = [];
+  await sleep(3000);
+  check('and hides them again when it is removed', !listedTo('N2', 'B1') && !listedTo('B1', 'N2'));
+  s.writeConfig('config.yml', CONFIG);
+  await reload(); await sleep(3000);
+  bad = presenceBad(() => true);
+  check('back to presence: everyone, everyone lists everyone', bad.length === 0, bad.slice(0, 12).join('; '));
+}
+
 async function adminCheck() {
   section('/mayor check');
   let m = await s.run('mayor check R1 R2', /\w+ can(?:'t)? reach R2: [^\n]*/);
@@ -396,6 +439,7 @@ async function pausedOnBrokenStart() {
   check('chat is paused, and the player is told', bots.R1.heard('Chat is paused for a moment', m1) && !bots.R2.heard('paused hello', m2));
   bots.R1.say('/msg R2 paused pm'); await sleep(1200);
   check('private messages are paused too', !bots.R2.heard('paused pm', m2));
+  check('D283: while paused, nobody is listed to anyone else (fail closed)', !listedTo('R1', 'R2') && !listedTo('R2', 'R1'));
   s.writeConfig('config.yml', good);
   await reload();
   const k = bots.R2.mark(); bots.R1.say('back again'); await sleep(1200);
@@ -500,6 +544,7 @@ async function graves() {
   await nobodyHeard();
   await share();
   await liveCircles();
+  await presence();
   await adminCheck();
   await graves();
   await brokenReload();
