@@ -15,7 +15,8 @@ public record Settings(
         Filtered filtered,
         NobodyHeard nobodyHeard,
         List<String> quips,
-        Map<String, String> messages) {
+        Map<String, String> messages,
+        boolean presenceByReach) {
 
     /** A short sentence for the log about the word filter. */
     public String filterSummary() {

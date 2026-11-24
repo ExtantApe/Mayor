@@ -20,3 +20,7 @@ Owner decisions for HouseRules, newest first.
 
 - **Map plugin's new name (owner, D194, D196):** the share hook follows BlueMapMini only. No hooks or stand-ins for its earlier names are kept.
 - **Name (owner, D198):** the plugin is renamed Mayor. The owner chose "Mayor (Recommended)". Released as 0.5.0 with no old names kept, installed together with BlueMapMini 0.3.0.
+
+## 2026-11-24
+
+- **Who's online (owner, D283):** before kids are let into the second server, players who share no circle don't see each other in the player list or join messages there. The owner chose "Circles like [the main server] (Recommended)" after a safety review found adults could see and chat with kids at a shared station. Built as `presence: reach`, off by default so other servers keep vanilla behavior. It fails closed when the config can't be read.

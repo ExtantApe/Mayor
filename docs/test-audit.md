@@ -2,6 +2,20 @@
 
 Kept by this repo's owning session (Minecraft: Plugins Lead), per `~/Code/CLAUDE.md`, "Test self-audits". Newest first.
 
+
+## 2026-11-24: presence (0.8.0, after a feature)
+
+| Promise | Covered by |
+| --- | --- |
+| With `presence: reach`, players see each other in the player list only if they can chat | unit `PresenceTest` (circle-only station, shared circle, no circle, ordinary world, bypass); live, every pair of 8 bots against the suite's own model of reach |
+| Join and leave messages go only to players who could chat with them | live, N2 leaves and rejoins and exactly the expected players see each message |
+| Circle changes apply within seconds, no relog | live, a circle granted and removed with LuckPerms |
+| The default changes nothing | unit `presenceEveryoneShowsEveryone`, `presenceDefaultsToEveryone`; live, switching back to `everyone` lists everyone again |
+| Fails closed: paused rules show nobody | unit `pausedRulesShowNobodyButYourself`; live, nobody listed while paused at startup |
+| A typo is an error; `reach` with no circles warns | unit `presenceWithATypoIsAnError`, `presenceReachWithoutCirclesWarns` |
+
+Gaps skipped: death and advancement messages and nametags are out of scope and say so in the README. The two-second refresh timer is a scheduler call, covered by the live circle-change check.
+
 ## 2026-11-10: the --json console
 
 What's new: every `/mayor` command takes `--json <id>` (Signalbox format 1), and there's `/mayor describe`. Since the first audit, only CI changes had landed, so this covers the console alone.

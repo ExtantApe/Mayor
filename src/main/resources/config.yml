@@ -15,6 +15,12 @@ circles: []
 # and a player with no circle can't chat or write at all. Useful for a lobby where new players wait to be approved.
 circle-only-worlds: []
 
+# Who players see in the player list (Tab) and in join and leave messages.
+#   everyone: as in vanilla.
+#   reach: only players they could chat with under the rules above. A kid and an adult who share no circle don't see
+#     each other online. If the config can't be read at startup, nobody is shown to anyone until it's fixed.
+presence: everyone
+
 # Worlds that count as one for chat. A world not listed here joins the world it's named after when its name ends
 # with one of the dimension-suffixes below, so "survival_nether" goes with "survival".
 #   world-groups:

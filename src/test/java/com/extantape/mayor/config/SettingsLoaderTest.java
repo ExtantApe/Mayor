@@ -83,4 +83,30 @@ class SettingsLoaderTest {
         assertTrue(on.settings().filtered().maskForViewers());
         assertTrue(on.warnings().isEmpty(), on.warnings().toString());
     }
+
+    @Test
+    void presenceDefaultsToEveryone() {
+        assertFalse(load(null, null, null).settings().presenceByReach());
+    }
+
+    @Test
+    void presenceReachIsRead() {
+        SettingsLoader.Result r = load("circles: [kids, adults]\npresence: reach\n", null, null);
+        assertTrue(r.ok(), r.errors().toString());
+        assertTrue(r.settings().presenceByReach());
+    }
+
+    @Test
+    void presenceWithATypoIsAnError() {
+        SettingsLoader.Result r = load("circles: [kids]\npresence: rech\n", null, null);
+        assertFalse(r.ok());
+        assertTrue(r.errors().toString().contains("presence must be everyone or reach"), r.errors().toString());
+    }
+
+    @Test
+    void presenceReachWithoutCirclesWarns() {
+        SettingsLoader.Result r = load("presence: reach\n", null, null);
+        assertTrue(r.ok(), r.errors().toString());
+        assertTrue(r.warnings().toString().contains("presence: reach has no effect"), r.warnings().toString());
+    }
 }

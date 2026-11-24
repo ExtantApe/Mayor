@@ -33,7 +33,7 @@ public final class SettingsLoader {
     private static final Pattern NAME = Pattern.compile("[a-z0-9_-]+");
     private static final Set<String> CONFIG_KEYS = Set.of("config-version", "circles", "circle-only-worlds",
             "world-groups", "dimension-suffixes", "private-message-commands", "reply-commands", "broadcast-commands",
-            "blocked-commands", "nobody-heard", "messages");
+            "blocked-commands", "nobody-heard", "messages", "presence");
     private static final Set<String> FILTER_KEYS = Set.of("enabled", "check", "words", "allow", "mask-for-viewers");
 
     /** The result: settings to apply, or errors explaining why there are none. Warnings either way. */
@@ -146,12 +146,16 @@ public final class SettingsLoader {
         for (String note : strings(QUIPS, notes, "notes")) if (!note.isBlank()) quipList.add(note);
         if (nobodyHeard.enabled() && quipList.isEmpty()) warnings.add(QUIPS + ": there are no notes, so nobody-heard stays quiet.");
 
+        String presence = String.valueOf(base.get("presence", "everyone")).trim().toLowerCase(java.util.Locale.ROOT);
+        if (!presence.equals("everyone") && !presence.equals("reach")) errors.add(CONFIG + ": presence must be everyone or reach.");
+        if (presence.equals("reach") && circles.isEmpty()) warnings.add(CONFIG + ": presence: reach has no effect until at least one circle is listed.");
+
         Reach reach = new Reach(circles, circleOnly, groupOf, suffixes);
         CommandRules commands = new CommandRules(reach, filter, filtered.messages(), filtered.maskForViewers(),
                 Set.copyOf(strings(CONFIG, base, "private-message-commands")), Set.copyOf(strings(CONFIG, base, "reply-commands")),
                 Set.copyOf(strings(CONFIG, base, "broadcast-commands")), blocked);
         if (!errors.isEmpty()) return new Result(null, List.copyOf(errors), List.copyOf(warnings));
-        return new Result(new Settings(reach, commands, filter, filtered, nobodyHeard, List.copyOf(quipList), Map.copyOf(messages)),
+        return new Result(new Settings(reach, commands, filter, filtered, nobodyHeard, List.copyOf(quipList), Map.copyOf(messages), presence.equals("reach")),
                 List.of(), List.copyOf(warnings));
     }
 
