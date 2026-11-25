@@ -238,6 +238,7 @@ public final class PosseCommands {
         return switch (why) {
             case RULES_OFF -> "no circles are set up, so everyone reaches everyone";
             case SELF -> "that's the same player";
+            case PENDING -> "a player who just joined is still being placed, so nobody reaches them yet";
             case BYPASS -> "one of them has posse.bypass";
             case SAME_WORLD -> "they're in the same world group, " + reach.group(from.getWorld().getName());
             case SHARED_CIRCLE -> "they share the circle " + reach.sharedCircle(a, b);

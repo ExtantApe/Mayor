@@ -82,6 +82,19 @@ public final class HomeWorlds {
     }
 
     /**
+     * Whether these rules can ever move this player: home worlds are on and either the player is in no circle and
+     * there is a no-circle entry, or every circle they hold has an entry. A player in a circle with no entry, such as
+     * an adult, is never moved, so there is nothing to wait for.
+     */
+    public boolean governs(Reach reach, Subject who) {
+        if (!enabled() || reach == null || !reach.active()) return false;
+        List<String> circles = reach.circlesOf(who);
+        if (circles.isEmpty()) return noCircle != null;
+        for (String circle : circles) if (!byCircle.containsKey(circle)) return false;
+        return true;
+    }
+
+    /**
      * Whether and where to move a player.
      *
      * @param who       the player, for their circles

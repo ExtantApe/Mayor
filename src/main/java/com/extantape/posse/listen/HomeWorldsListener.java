@@ -2,6 +2,7 @@ package com.extantape.posse.listen;
 
 import com.extantape.posse.PossePlugin;
 import com.extantape.posse.rules.HomeWorlds;
+import com.extantape.posse.rules.Pending;
 import com.extantape.posse.rules.Subject;
 import com.extantape.posse.text.Messages;
 import org.bukkit.Bukkit;
@@ -13,9 +14,11 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Applies {@link HomeWorlds} (D290): on join, on respawn, and after any world change, as a safety net for a teleport
@@ -58,30 +61,63 @@ public final class HomeWorldsListener implements Listener {
     /**
      * A player who has never joined is placed by WelcomeWagon or Multiverse's first-spawn after this event, so the
      * check waits {@link HomeWorlds#joinDelayTicks} ticks and then looks at where they ended up (D297). A returning
-     * player is checked at once, as before. If the player quits first there is nothing to do, and if the move doesn't
-     * go through they are disconnected, never left in a world they aren't allowed in.
+     * player is checked at once. Until the delayed check runs, a player these rules govern is pending: they reach
+     * nobody, and nobody reaches them (see {@link Pending}). If they quit first there is nothing to do, and if the
+     * move doesn't go through they are disconnected, never left in a world they aren't allowed in.
      */
     @EventHandler(priority = EventPriority.LOW)
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         long delay = HomeWorlds.joinDelayTicks(player.hasPlayedBefore());
-        if (delay <= 0) checkAfterJoin(player);
-        else Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            if (player.isOnline()) checkAfterJoin(player);
+        if (delay <= 0) {
+            checkAfterJoin(player, false);
+            return;
+        }
+        PossePlugin.State state = plugin.state();
+        UUID id = player.getUniqueId();
+        boolean governed = state != null && state.settings().homeWorlds().governs(state.settings().reach(), Subject.of(player));
+        if (governed) Pending.begin(id);
+        // The task keeps the ID, not the Player, so a player who quit and came back is never mistaken for this one.
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            Player now = Bukkit.getPlayer(id);
+            if (now == null) {
+                Pending.end(id);
+                return;
+            }
+            checkAfterJoin(now, governed);
         }, delay);
     }
 
-    private void checkAfterJoin(Player player) {
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onQuit(PlayerQuitEvent event) {
+        Pending.end(event.getPlayer().getUniqueId());
+    }
+
+    /** Ends the pending state and sends the held join line, for where the player is now. Runs on the main thread. */
+    private void release(UUID id) {
+        Pending.end(id);
+        Player player = Bukkit.getPlayer(id);
+        if (player != null && plugin.presence() != null) plugin.presence().release(player);
+    }
+
+    private void checkAfterJoin(Player player, boolean wasPending) {
+        UUID id = player.getUniqueId();
         HomeWorlds.Move move = decide(player, player.getWorld().getName());
-        if (move == null) return;
-        player.teleportAsync(spawnOf(move)).thenAccept(ok -> {
-            if (ok) tell(player, move);
-            else Bukkit.getScheduler().runTask(plugin, () -> {
+        if (move == null) {
+            if (wasPending) release(id);
+            return;
+        }
+        player.teleportAsync(spawnOf(move)).thenAccept(ok -> Bukkit.getScheduler().runTask(plugin, () -> {
+            Player now = Bukkit.getPlayer(id);
+            if (ok) {
+                if (now != null) tell(now, move);
+                if (wasPending) release(id);
+            } else {
                 // Fail closed: a player who must not stay here and couldn't be moved is sent off, never left in place.
                 plugin.getLogger().warning("A home-worlds move on join didn't go through, so the player was disconnected instead of being left there.");
-                if (player.isOnline()) player.kick(net.kyori.adventure.text.Component.text("Sorry, we couldn't get you to your world. Please join again."));
-            });
-        });
+                if (now != null) now.kick(net.kyori.adventure.text.Component.text("Sorry, we couldn't get you to your world. Please join again."));
+            }
+        }));
     }
 
     @EventHandler(priority = EventPriority.HIGH)
