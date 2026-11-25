@@ -16,7 +16,7 @@ public final class Reach {
 
     /** Why a player can or can't reach another, for /posse check. */
     public enum Why {
-        RULES_OFF(true), SELF(true), BYPASS(true), SAME_WORLD(true), SHARED_CIRCLE(true),
+        RULES_OFF(true), SELF(true), PENDING(false), BYPASS(true), SAME_WORLD(true), SHARED_CIRCLE(true),
         CIRCLE_ONLY_WORLD(false), NOT_SHARED(false);
 
         public final boolean reaches;
@@ -89,6 +89,7 @@ public final class Reach {
     public Why why(Subject from, Subject to) {
         if (!active()) return Why.RULES_OFF;
         if (from.id().equals(to.id())) return Why.SELF;
+        if (from.pending() || to.pending()) return Why.PENDING;
         if (from.has(BYPASS) || to.has(BYPASS)) return Why.BYPASS;
         String world = group(from.world());
         boolean sameWorld = world.equals(group(to.world()));

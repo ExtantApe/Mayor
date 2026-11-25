@@ -39,3 +39,7 @@ Owner decisions for HouseRules, newest first.
 After the Trust and Safety review of the rename, the owner chose:
 - **No folder guard in code** ("No one else uses this yet"). Instead, the live checklist checks `/posse status` and `/posse check` with players kept out.
 - **No reading of old `mayor:` book keys** ("Get rid of mayor yes"). No server ran 0.10.0, so no book loses its author.
+
+## 2026-11-25: New kids and the lobby
+
+- **Fix it in Posse (owner, D297, "Fix it in Posse (Recommended)"):** with home worlds on, a first-ever join landed in the kids' fallback world instead of the lobby, because Posse moved the kid before WelcomeWagon or Multiverse placed them. A first-ever join is now checked 20 ticks after joining; a returning player is still checked at once. The kid is never left in a world they aren't allowed in: the check still moves or, if it can't, disconnects. Released as 0.11.1.

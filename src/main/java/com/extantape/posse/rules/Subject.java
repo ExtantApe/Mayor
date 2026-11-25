@@ -15,12 +15,18 @@ public interface Subject {
 
     boolean has(String permission);
 
+    /** Whether this player's delayed first-join check is still pending (D297). They reach nobody until it runs. */
+    default boolean pending() {
+        return false;
+    }
+
     static Subject of(Player player) {
         return new Subject() {
             @Override public UUID id() { return player.getUniqueId(); }
             @Override public String name() { return player.getName(); }
             @Override public String world() { return player.getWorld().getName(); }
             @Override public boolean has(String permission) { return player.hasPermission(permission); }
+            @Override public boolean pending() { return Pending.has(player.getUniqueId()); }
         };
     }
 

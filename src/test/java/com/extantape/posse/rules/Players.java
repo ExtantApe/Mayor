@@ -16,4 +16,16 @@ final class Players {
     static String circle(String name) {
         return Reach.CIRCLE_PERMISSION + name;
     }
+
+    /** A player whose delayed first-join check is still pending (D297). */
+    static Subject pending(String name, String world, String... permissions) {
+        Subject base = player(name, world, permissions);
+        return new Subject() {
+            @Override public UUID id() { return base.id(); }
+            @Override public String name() { return base.name(); }
+            @Override public String world() { return base.world(); }
+            @Override public boolean has(String permission) { return base.has(permission); }
+            @Override public boolean pending() { return true; }
+        };
+    }
 }

@@ -14,7 +14,7 @@ public final class Presence {
      */
     public static boolean maySee(Subject viewer, Subject other, boolean byReach, Reach reach) {
         if (viewer.id().equals(other.id())) return true;
-        if (reach == null) return false;
+        if (viewer.pending() || other.pending() || reach == null) return false;
         if (!byReach) return true;
         return reach.mayReach(viewer, other);
     }

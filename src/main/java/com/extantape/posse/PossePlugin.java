@@ -95,6 +95,11 @@ public final class PossePlugin extends JavaPlugin implements ReachService {
     public void onDisable() {
         getServer().getServicesManager().unregisterAll(this);
         partners.clear();
+        com.extantape.posse.rules.Pending.clear();
+    }
+
+    public com.extantape.posse.listen.PresenceListener presence() {
+        return presence;
     }
 
     /** Reads the config files again. Returns true if the new rules were applied. */

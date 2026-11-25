@@ -3,6 +3,22 @@
 Kept by this repo's owning session (Minecraft: Plugins Lead), per `~/Code/CLAUDE.md`, "Test self-audits". Newest first.
 
 
+## 2026-11-25: first join and old nodes (0.11.1, D297)
+
+| Promise | Covered by |
+| --- | --- |
+| A first join is checked after a delay, a returning player at once | unit `HomeWorldsTest.aFirstJoinWaits...` |
+| A new kid placed in an allowed world stays and hears nothing; one placed elsewhere is moved | unit; bot `home-worlds.js`, "First join" (fails if the delay is removed) |
+| Old `mayor.circle.*` and `mayor.bypass` grant nothing | unit `OldNodesTest`; bot, a player with only old nodes is moved as no-circle and `/posse check` says they can't reach |
+| No old plugin name in shipped text | unit `ShippedTextTest` |
+
+| A pending new kid reaches nobody: no chat, no private message either way, no tab entry, no join line; all arrive after the check, for where they are | unit `PendingTest`; bot `home-worlds.js`, "Pending first join" (nine checks fail if pending is removed) |
+| A new kid left in the main world with no placement ends in the fallback | bot, G1 |
+| A player with no home-worlds entry has no pending state | unit `PendingTest.homeWorldsOnlyWaitsForPlayersItCanMove` |
+| A failed delayed move disconnects, and nobody hears H1 join or leave | bot, H1 (the helper cancels the teleport) |
+
+Gaps: the stand-in first-spawn is a helper plugin, not a real WelcomeWagon or Multiverse. Not tested: a player who quits and rejoins inside the 20 ticks (the task looks the player up by ID, but no bot does this), and the pending state across a `/posse reload`.
+
 ## 2026-11-25: book authors (0.10.0, D291, after a feature)
 
 | Promise | Covered by |

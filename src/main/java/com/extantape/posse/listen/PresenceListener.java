@@ -1,6 +1,7 @@
 package com.extantape.posse.listen;
 
 import com.extantape.posse.PossePlugin;
+import com.extantape.posse.rules.Pending;
 import com.extantape.posse.rules.Presence;
 import com.extantape.posse.rules.PresenceMessages;
 import com.extantape.posse.rules.Reach;
@@ -53,8 +54,26 @@ public final class PresenceListener implements Listener {
                 viewer -> viewers.get(viewer).sendMessage(message), m -> Bukkit.getConsoleSender().sendMessage(m));
     }
 
+    /** Join lines held back for players whose delayed first-join check is pending (D297). */
+    private final Map<java.util.UUID, Component> held = new java.util.concurrent.ConcurrentHashMap<>();
+
+    /** The player's delayed check is done: sends the held join line, if any, for where they are, per the presence rules. */
+    public void release(Player player) {
+        Component message = held.remove(player.getUniqueId());
+        if (message != null) deliver(message, player);
+        refresh();
+    }
+
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onJoin(PlayerJoinEvent event) {
+        if (Pending.has(event.getPlayer().getUniqueId())) {
+            // Nobody hears about them until they are in a world they may be in, whatever the presence setting.
+            Component message = event.joinMessage();
+            event.joinMessage(null);
+            if (message != null) held.put(event.getPlayer().getUniqueId(), message);
+            refresh();
+            return;
+        }
         if (limited()) {
             Component message = event.joinMessage();
             event.joinMessage(null);
@@ -65,6 +84,11 @@ public final class PresenceListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onQuit(PlayerQuitEvent event) {
+        if (held.remove(event.getPlayer().getUniqueId()) != null || Pending.has(event.getPlayer().getUniqueId())) {
+            // Never announced, so never announced as leaving.
+            event.quitMessage(null);
+            return;
+        }
         if (!limited()) return;
         Component message = event.quitMessage();
         event.quitMessage(null);

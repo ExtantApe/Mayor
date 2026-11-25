@@ -37,6 +37,14 @@ public final class HomeWorlds {
      */
     public record Move(String world, boolean degraded, String wanted, String message, Kind kind) {}
 
+    /** How long a first-ever join waits before its world is checked, so first-spawn placement happens first (D297). One second. */
+    public static final long FIRST_JOIN_DELAY_TICKS = 20;
+
+    /** Ticks to wait before checking a player's world after they join: 0 for someone who has played here before. */
+    public static long joinDelayTicks(boolean playedBefore) {
+        return playedBefore ? 0 : FIRST_JOIN_DELAY_TICKS;
+    }
+
     public static final HomeWorlds OFF = new HomeWorlds(Map.of(), null);
 
     private final Map<String, Entry> byCircle;
@@ -71,6 +79,19 @@ public final class HomeWorlds {
         }
         if (noCircle != null) all.add(noCircle.fallback());
         return all;
+    }
+
+    /**
+     * Whether these rules can ever move this player: home worlds are on and either the player is in no circle and
+     * there is a no-circle entry, or every circle they hold has an entry. A player in a circle with no entry, such as
+     * an adult, is never moved, so there is nothing to wait for.
+     */
+    public boolean governs(Reach reach, Subject who) {
+        if (!enabled() || reach == null || !reach.active()) return false;
+        List<String> circles = reach.circlesOf(who);
+        if (circles.isEmpty()) return noCircle != null;
+        for (String circle : circles) if (!byCircle.containsKey(circle)) return false;
+        return true;
     }
 
     /**

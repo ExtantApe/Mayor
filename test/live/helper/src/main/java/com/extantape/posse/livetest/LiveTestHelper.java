@@ -20,6 +20,11 @@ import java.util.Locale;
  * Test only. One console command, /mt:
  *   mt world <name>          makes a small flat world (a name ending in _nether or _the_end gets that environment)
  *   mt tp <player> <world>   moves a player to a world's spawn
+ *   mt firstspawn <player> <world>  when that player next joins for the first time, moves them to the world 1 tick
+ *                            after the join event, as WelcomeWagon or Multiverse's first-spawn would (D297)
+ *   mt stall <player> <ms>   after that player next joins, makes each of the next 30 ticks take <ms> longer, so a
+ *                            20-tick delay lasts about 20 x <ms> in real time and a test can look inside it (D297)
+ *   mt blocktp <player>      cancels every later teleport of that player, so a move Posse tries fails (D297)
  *   mt where <player>        prints "HRT where <player> <world>"
  *   mt tps                   prints "HRT tps <1m> mspt <avg>"
  *   mt worlds                prints "HRT worlds <name,name,...>"
@@ -47,6 +52,43 @@ public final class LiveTestHelper extends JavaPlugin implements Listener {
     public void onDeath(PlayerDeathEvent event) {
         String n = event.getPlayer().getName();
         getLogger().info((planned.remove(n) ? "HRT planned death " : "HRT death ") + n);
+    }
+
+    /** Made-up first-spawn placements: player name to world name (mt firstspawn). */
+    private final java.util.Map<String, String> firstSpawn = new java.util.concurrent.ConcurrentHashMap<>();
+
+    @EventHandler(priority = org.bukkit.event.EventPriority.HIGHEST)
+    public void onFirstJoin(org.bukkit.event.player.PlayerJoinEvent event) {
+        Player p = event.getPlayer();
+        String world = firstSpawn.remove(p.getName());
+        if (world == null || p.hasPlayedBefore()) return;
+        Bukkit.getScheduler().runTaskLater(this, () -> {
+            World w = Bukkit.getWorld(world);
+            if (w != null && p.isOnline()) p.teleportAsync(w.getSpawnLocation()).thenAccept(ok -> getLogger().info("HRT firstspawn " + p.getName() + " " + world + " " + ok));
+        }, 1L);
+    }
+
+    /** Players whose teleports are cancelled (mt blocktp). */
+    private final java.util.Set<String> blocked = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    @EventHandler(priority = org.bukkit.event.EventPriority.HIGHEST)
+    public void onTeleport(org.bukkit.event.player.PlayerTeleportEvent event) {
+        if (blocked.contains(event.getPlayer().getName())) event.setCancelled(true);
+    }
+
+    /** Players whose next join is followed by a main-thread stall: name to milliseconds (mt stall). */
+    private final java.util.Map<String, Long> stalls = new java.util.concurrent.ConcurrentHashMap<>();
+
+    @EventHandler(priority = org.bukkit.event.EventPriority.MONITOR)
+    public void onStallJoin(org.bukkit.event.player.PlayerJoinEvent event) {
+        Long ms = stalls.remove(event.getPlayer().getName());
+        if (ms == null) return;
+        // A single long sleep doesn't work: the server runs the missed ticks back to back afterwards.
+        int[] left = {30};
+        Bukkit.getScheduler().runTaskTimer(this, task -> {
+            if (left[0]-- <= 0) task.cancel();
+            else try { Thread.sleep(ms); } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
+        }, 1L, 1L);
     }
 
     @Override
@@ -93,6 +135,23 @@ public final class LiveTestHelper extends JavaPlugin implements Listener {
                             }, 5L);
                             return 1;
                         }))))
+                .then(Commands.literal("firstspawn").then(Commands.argument("player", StringArgumentType.word())
+                        .then(Commands.argument("world", StringArgumentType.word()).executes(ctx -> {
+                            firstSpawn.put(StringArgumentType.getString(ctx, "player"), StringArgumentType.getString(ctx, "world"));
+                            getLogger().info("HRT firstspawn set");
+                            return 1;
+                        }))))
+                .then(Commands.literal("stall").then(Commands.argument("player", StringArgumentType.word())
+                        .then(Commands.argument("ms", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0, 20000)).executes(ctx -> {
+                            stalls.put(StringArgumentType.getString(ctx, "player"), (long) com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "ms"));
+                            getLogger().info("HRT stall set");
+                            return 1;
+                        }))))
+                .then(Commands.literal("blocktp").then(Commands.argument("player", StringArgumentType.word()).executes(ctx -> {
+                    blocked.add(StringArgumentType.getString(ctx, "player"));
+                    getLogger().info("HRT blocktp set");
+                    return 1;
+                })))
                 .then(Commands.literal("where").then(Commands.argument("player", StringArgumentType.word()).executes(ctx -> {
                     String name = StringArgumentType.getString(ctx, "player");
                     Player p = Bukkit.getPlayerExact(name);
