@@ -15,7 +15,7 @@ async function books(n) {
   const m = await s.run(`mt books ${n}`, new RegExp(`HRT books ${n} ([^\\n]*)`), 5000);
   return m ? m[1].trim() : null;
 }
-async function give(n, author, title) { await s.run(`mt book ${n} ${author} ${title}`, new RegExp(`HRT book ${n}`), 5000); }
+async function give(n, author, title) { await s.run(`mt clear ${n}`, new RegExp(`HRT clear ${n}`), 5000); await s.run(`mt book ${n} ${author} ${title}`, new RegExp(`HRT book ${n}`), 5000); }
 async function reload() { return s.run('mayor reload', /\[Mayor\] (Reloaded|The config has problems, so nothing changed|The config still has problems)[^\n]*/, 10000); }
 /** Waits for the sweep (every 2 seconds), then reads what the player is carrying. */
 async function carried(n, want, ms = 6000) {
@@ -42,21 +42,25 @@ async function carried(n, want, ms = 6000) {
   await s.run('mt drop K1', /HRT drop K1/, 5000);
   await s.run('mt near A1 drop', /HRT near A1 true/, 8000);
   check('an adult who picks it up sees Unknown', (await carried('A1', 'Unknown/Tale')) === 'Unknown/Tale', await books('A1'));
+  await s.run('mt clear A1', /HRT clear A1/, 5000); await s.run('mt near A1 K1', /HRT near A1 true/, 8000);
   await give('K1', 'K1', 'Tale2');
   await sleep(2500);
   await s.run('mt drop K1', /HRT drop K1/, 5000);
   await s.run('mt near K2 drop', /HRT near K2 true/, 8000);
   check('a kid in the same circle who picks it up sees the author', (await carried('K2', 'K1/Tale2')) === 'K1/Tale2', await books('K2'));
+  await s.run('mt clear K2', /HRT clear K2/, 5000); await s.run('mt near K2 K1', /HRT near K2 true/, 8000);
   await give('K1', 'K1', 'Tale3');
   await sleep(2500);
   await s.run('mt drop K1', /HRT drop K1/, 5000);
   await s.run('mt near V1 drop', /HRT near V1 true/, 8000);
   check('the visitor in both circles sees the author', (await carried('V1', 'K1/Tale3')) === 'K1/Tale3', await books('V1'));
+  await s.run('mt clear V1', /HRT clear V1/, 5000); await s.run('mt near V1 K1', /HRT near V1 true/, 8000);
   await give('K1', 'K1', 'Tale4');
   await sleep(2500);
   await s.run('mt drop K1', /HRT drop K1/, 5000);
   await s.run('mt near X1 drop', /HRT near X1 true/, 8000);
   check('a player in no circle sees Unknown', (await carried('X1', 'Unknown/Tale4')) === 'Unknown/Tale4', await books('X1'));
+  await s.run('mt clear X1', /HRT clear X1/, 5000); await s.run('mt near X1 K1', /HRT near X1 true/, 8000);
 
   section('A quest journal made by a plugin, with the player\'s name as author and in the title');
   await give('K2', 'K1', 'K1_Journal');

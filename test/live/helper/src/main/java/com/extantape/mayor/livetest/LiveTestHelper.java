@@ -27,6 +27,7 @@ import java.util.Locale;
  *   mt book <player> <author> <title>  puts a signed book in the player's first slot (D291)
  *   mt drop <player>         drops the player's first-slot item 20 blocks east, where nobody stands, and remembers the spot
  *   mt near <player> <other> moves a player onto another player's spot, or onto the last dropped item if other is "drop"
+ *   mt clear <player>        empties the player's inventory
  *   mt books <player>        prints "HRT books <player> <author>/<title>;..." for each written book carried
  *   mt chest <player>        puts the first-slot item in a chest at the player's spot, opens it for them and prints "HRT chest <player> ..."
  */
@@ -144,6 +145,16 @@ public final class LiveTestHelper extends JavaPlugin implements Listener {
                     lastDrop = p.getLocation().add(20, 0, 0);
                     p.getWorld().dropItem(lastDrop, held);
                     getLogger().info("HRT drop " + p.getName());
+                    return 1;
+                })))
+                .then(Commands.literal("clear").then(Commands.argument("player", StringArgumentType.word()).executes(ctx -> {
+                    Player p = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "player"));
+                    if (p == null) {
+                        getLogger().info("HRT clear FAILED");
+                        return 0;
+                    }
+                    p.getInventory().clear();
+                    getLogger().info("HRT clear " + p.getName());
                     return 1;
                 })))
                 .then(Commands.literal("near").then(Commands.argument("player", StringArgumentType.word())
