@@ -141,4 +141,19 @@ public final class Reach {
         return ownerOnline && !circleOnly.contains(here)
                 && here.equals(group(viewer.world())) && here.equals(group(owner.world()));
     }
+
+    /**
+     * Whether {@code viewer} may see {@code author}'s name on something the author made, such as a book's author line
+     * (owner, 2026-11-24, D291). Follows circles, like chat does: the author themself, either side's mayor.bypass, or
+     * a shared circle. Being in the same world doesn't count, so a kid and an adult standing together still don't see
+     * each other's names. With no circles set up the rules are off and every name shows. An author Mayor knows nothing
+     * about ({@code author} null) counts as no.
+     */
+    public boolean mayKnowName(Subject viewer, Subject author) {
+        if (!active()) return true;
+        if (author == null) return viewer.has(BYPASS);
+        if (viewer.id().equals(author.id())) return true;
+        if (viewer.has(BYPASS) || author.has(BYPASS)) return true;
+        return sharedCircle(viewer, author) != null;
+    }
 }

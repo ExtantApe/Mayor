@@ -3,6 +3,23 @@
 Kept by this repo's owning session (Minecraft: Plugins Lead), per `~/Code/CLAUDE.md`, "Test self-audits". Newest first.
 
 
+## 2026-11-25: book authors (0.10.0, D291, after a feature)
+
+| Promise | Covered by |
+| --- | --- |
+| The author and a same-circle player see the name; a player with no shared circle doesn't, even in the same world | unit `BookAuthorsTest`; bot `book-authors.js` (written, not run) |
+| The visitor in both circles sees both sides | unit; bot |
+| Bypass on either side counts, as in chat | unit |
+| Fails closed: an unseen real player is hidden, paused means author only, nobody holding it means hidden | unit `anAuthorMayerNeverSawIsHidden...`, `whilePausedOnlyTheAuthorSeesTheName`, `nobodyHoldingItMeansHidden` |
+| A name that is no player, the setting off and no circles show everything | unit |
+| A title holding the name is masked, the rest untouched | unit `aTitleHoldingTheNameShowsStarsInstead` |
+| A quest-journal-style book behaves the same | bot (written, not run) |
+| Nothing is lost: the true author returns when a circle is granted | bot (written, not run); the swap code keeps it in the item's data |
+| Chest view follows the viewer | bot (written, not run) |
+| Config: default on, off, custom word, a typo is an error | unit `SettingsLoaderTest` |
+
+Gaps: the bot test could not run because the disk was under 40 GB free, so every item-swap path is untested on a server. Not driven by bots at all: item frames, lecterns, hoppers, death drops and the one-tick view after a click. The item swap itself has no unit test, since it needs a running server. Run `MAYOR_SUITE=book-authors.js MAYOR_PORT=25733 test/live/run.sh <version>` on 26.1.2, 26.2 and 26.3 before release.
+
 ## 2026-11-25: home worlds (0.9.0, after a feature)
 
 | Promise | Covered by |

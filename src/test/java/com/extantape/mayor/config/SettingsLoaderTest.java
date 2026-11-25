@@ -148,4 +148,28 @@ class SettingsLoaderTest {
             assertFalse(load(bad, null, null).ok(), bad);
         }
     }
+
+    @Test
+    void bookAuthorsAreHiddenByDefault() {
+        SettingsLoader.Result r = load(null, null, null);
+        assertTrue(r.settings().bookAuthors().hide());
+        assertEquals("Unknown", r.settings().bookAuthors().shownAs());
+        assertTrue(r.warnings().isEmpty(), r.warnings().toString());
+    }
+
+    @Test
+    void bookAuthorsCanBeTurnedOffAndRenamed() {
+        SettingsLoader.Result r = load("book-authors:\n  hide: false\n  shown-as: Somebody\n", null, null);
+        assertTrue(r.ok(), r.errors().toString());
+        assertFalse(r.settings().bookAuthors().hide());
+        assertEquals("Somebody", r.settings().bookAuthors().shownAs());
+    }
+
+    @Test
+    void aBlankShownAsFallsBackToUnknownAndATypoIsAnError() {
+        assertEquals("Unknown", load("book-authors:\n  shown-as: \"\"\n", null, null).settings().bookAuthors().shownAs());
+        SettingsLoader.Result bad = load("book-authors:\n  hide: maybe\n", null, null);
+        assertFalse(bad.ok());
+        assertTrue(bad.errors().toString().contains("book-authors.hide must be true or false"), bad.errors().toString());
+    }
 }

@@ -17,7 +17,8 @@ public record Settings(
         List<String> quips,
         Map<String, String> messages,
         boolean presenceByReach,
-        com.extantape.mayor.rules.HomeWorlds homeWorlds) {
+        com.extantape.mayor.rules.HomeWorlds homeWorlds,
+        BookAuthors bookAuthors) {
 
     /** A short sentence for the log about the word filter. */
     public String filterSummary() {
@@ -26,6 +27,10 @@ public record Settings(
 
     /** Which kinds of text the word filter checks. */
     public record Filtered(boolean chat, boolean messages, boolean signs, boolean books, boolean itemNames, boolean maskForViewers) {
+    }
+
+    /** Whether a written book's author is hidden from players who share no circle with them (D291), and what shows instead. */
+    public record BookAuthors(boolean hide, String shownAs) {
     }
 
     /** The note players get when nobody could hear their chat. */

@@ -37,6 +37,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class MayorPlugin extends JavaPlugin implements ReachService {
     private com.extantape.mayor.listen.PresenceListener presence;
+    private com.extantape.mayor.listen.BookListener books;
 
     public static final String ADMIN = "mayor.admin";
 
@@ -68,6 +69,9 @@ public final class MayorPlugin extends JavaPlugin implements ReachService {
         plugins.registerEvents(new ChatListener(this), this);
         plugins.registerEvents(new CommandListener(this), this);
         plugins.registerEvents(new TextListener(this), this);
+        books = new com.extantape.mayor.listen.BookListener(this);
+        plugins.registerEvents(books, this);
+        Bukkit.getScheduler().runTaskTimer(this, books::sweep, 40L, 40L);
         plugins.registerEvents(new PlayerListener(this), this);
         plugins.registerEvents(new com.extantape.mayor.listen.HomeWorldsListener(this), this);
         presence = new com.extantape.mayor.listen.PresenceListener(this);
@@ -113,6 +117,7 @@ public final class MayorPlugin extends JavaPlugin implements ReachService {
         problems = result.warnings();
         registerCirclePermissions(settings.reach());
         if (presence != null) presence.refresh();
+        if (books != null) Bukkit.getScheduler().runTask(this, books::sweep);
         rememberOnline();
         Reach reach = settings.reach();
         if (settings.homeWorlds().enabled()) {
@@ -215,6 +220,27 @@ public final class MayorPlugin extends JavaPlugin implements ReachService {
 
     public void tell(CommandSender to, Component message) {
         to.sendMessage(message);
+    }
+
+    /** Who wrote a book, as far as Mayor can tell (D291). {@code player} is false when the name matches no player Mayor could know. */
+    public record Author(boolean player, Subject subject) {
+    }
+
+    /** Looks an author up by the player ID stored on the book, else by name: online first, then the server's name cache. */
+    public Author resolveAuthor(String name, UUID tagged) {
+        UUID id = tagged;
+        if (id == null && name != null && !name.isBlank()) {
+            Player online = Bukkit.getPlayerExact(name.trim());
+            if (online != null) id = online.getUniqueId();
+            else {
+                var cached = Bukkit.getOfflinePlayerIfCached(name.trim());
+                if (cached != null) id = cached.getUniqueId();
+            }
+        }
+        if (id == null) return new Author(false, null);
+        Player online = Bukkit.getPlayer(id);
+        Subject who = online != null ? Subject.of(online) : known == null ? null : known.recall(id);
+        return new Author(true, who);
     }
 
     @Override

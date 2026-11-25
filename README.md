@@ -38,6 +38,13 @@ Otherwise they can't. A world group is a world with its Nether and End (`surviva
 
 It is off unless the section is there, and it needs at least one circle. A mistake in the section is a config error, so nothing half-applies. Not covered: the first tick before the move, and a world that Mayor can't see because another plugin loads it after the player joins. While chat is paused because the config couldn't be read at startup, home worlds are paused too, because Mayor can't tell who is in which circle.
 
+**Book authors.** A written book shows its author only to the author, players who share a circle with them, and players with `mayor.bypass`. Everyone else sees "Unknown" (`book-authors.shown-as`), and a title that holds the author's name shows `****` for it. That includes the BetonQuest quest journal, which carries its owner's name. Same world doesn't count, only circles, so a kid and an adult standing together still don't see each other's names. It is on by default; set `book-authors.hide: false` to turn it off. With no circles set up nothing is hidden.
+
+- The true author is kept on the book, so nothing is lost. Whoever may see it gets it back, and a circle granted or removed follows within two seconds.
+- Paper can't change an item for one viewer without packet tricks, so the book itself is swapped as it moves: masked unless a player who may see the author holds it. A player's inventory is set on join, on pickup, after clicks and every two seconds. Dropped, hopper, item frame and unopened chest books are masked, and a chest or lectern shows the author only while everyone looking at it may see it.
+- Fails closed: a real player Mayor has never seen is hidden, and while the config can't be read, only the author sees their name. A name that matches no player, such as a generated lore book, is left alone.
+- Not covered: names inside a book's pages, and books inside shulker boxes or bundles.
+
 **Blocked commands.** Any command can be turned off, each with its own message. `sort` also blocks `anyplugin:sort`, in any letter case.
 
 **Word filter.** `filter.yml` lists words and phrases to keep out of chat, private messages, signs, books and item names. It matches whole words, so "class" and "Scunthorpe" are fine, and it sees through `sh1t`, `$` for s and stretched letters. Spaced-out spellings get through. Blocked text is never logged or stored: the player is told kindly and can try again. Players with `mayor.filter.bypass`, such as an adults group, aren't filtered anywhere.
@@ -99,6 +106,7 @@ if (rules == null || rules.mayReach(from, to)) { /* send it */ }
 
 ## Limits
 
+- Book pages aren't checked for names, and a book moved into a chest shows its author to anyone else looking at that chest for one tick.
 - Signs are readable by anyone who walks past, and a book or named item can be carried to another world. Mayor only checks them when they're written.
 - Chat plugins that send messages their own way, rather than through Paper's chat event, aren't covered. Add their message commands to `private-message-commands`.
 - Only the commands listed in `private-message-commands` and `reply-commands` are checked. `/r` is checked against the last conversation Mayor saw.
