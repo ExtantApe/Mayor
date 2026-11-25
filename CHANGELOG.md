@@ -4,10 +4,18 @@
 
 - **Mayor is now Posse** (D292). Nothing about how it behaves has changed: every circle filter (chat, private messages, who's online, home worlds, book authors, signs, anvil renames, map shares) works as in 0.10.0 and fails closed the same way. No old name, command, permission or folder is kept, so a server owner must rename these before the first start:
   - The folder `plugins/Mayor` becomes `plugins/Posse`, and the jar `Mayor-*.jar` is replaced by `Posse-0.11.0.jar`. Move the old folder; don't copy it.
-  - Every permission node `mayor.*` becomes `posse.*` for each group and user: `mayor.admin`, `mayor.bypass`, `mayor.filter.bypass`, `mayor.circle.<name>` and `mayor.circles.names`. A node left under the old name grants nothing, so a kid's circle that isn't renamed puts that player in no circle.
+  - Every permission node `mayor.*` becomes `posse.*` for each group and user: `mayor.admin`, `mayor.bypass`, `mayor.filter.bypass`, `mayor.circle.<name>`, `mayor.circles` and `mayor.circles.names`. A node left under the old name grants nothing. A kid whose circle isn't renamed is in no circle, so home worlds stop holding them and they can share a world, chat and the player list with adults. A `mayor.circles: false` left behind gives `/circles` back.
   - The command `/mayor` is now `/posse`. `/circles` is unchanged.
   - Any config of another plugin that names it: BlueMapMini's `share.audience` (`mayor` and `mayor-world-group` become `posse` and `posse-world-group`), the Ten Winds condition in MobSquad (`mayor.circle.adults` becomes `posse.circle.adults`), and any `mayor.circle` in other plugins' permission settings. Plugins that depend on it (BlueMapAuth, BlueMapMini, LanternGraves) need their Posse releases.
   - The Java package is `com.extantape.posse` (the `api` package with `ReachService` included), for any plugin that looks the service up.
+- **Safe order for a server with kids.** Rename the permissions before Posse ever runs:
+  1. While Mayor is still running, add every `posse.*` node next to its `mayor.*` node. Mayor ignores them.
+  2. Stop the server. Move `plugins/Mayor` to `plugins/Posse`, swap the jar, and change MobSquad's condition and BlueMapMini's `share.audience` in the same stop.
+  3. Start with the whitelist on and players kept out. Check that `/posse status` lists the circles and home worlds you expect, and that `/posse check <kid> <adult>` answers NOT_SHARED.
+  4. Open the server, then remove the old `mayor.*` nodes.
+
+  A forgotten folder move leaves Posse on its default settings, with no circles, so step 3 matters.
+- Book data moves from `mayor:` to `posse:` keys, with no reading of the old ones (owner, 2026-11-25: "Get rid of mayor yes"). Books masked by 0.10.0 would keep "Unknown" for good. No server ran 0.10.0, so no books are affected here.
 - Tested: `./gradlew build` (unit tests) and the bot suites on throwaway Paper 26.1.2, 26.2 and 26.3: the unit tests passed, and suite.js passed 84/84 (3 skipped, the LanternGraves checks), book-authors.js 18/18, home-worlds.js 30/30 and presence-messages.js 6/6 on all three. Not run against the renamed BlueMapAuth, BlueMapMini or LanternGraves (their own releases cover that). Not yet seen in a real game client.
 
 ## 0.10.0
