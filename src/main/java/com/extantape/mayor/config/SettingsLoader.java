@@ -33,7 +33,7 @@ public final class SettingsLoader {
     private static final Pattern NAME = Pattern.compile("[a-z0-9_-]+");
     private static final Set<String> CONFIG_KEYS = Set.of("config-version", "circles", "circle-only-worlds",
             "world-groups", "dimension-suffixes", "private-message-commands", "reply-commands", "broadcast-commands",
-            "blocked-commands", "nobody-heard", "messages", "presence", "home-worlds");
+            "blocked-commands", "nobody-heard", "messages", "presence", "home-worlds", "book-authors");
     private static final Set<String> FILTER_KEYS = Set.of("enabled", "check", "words", "allow", "mask-for-viewers");
 
     /** The result: settings to apply, or errors explaining why there are none. Warnings either way. */
@@ -152,12 +152,17 @@ public final class SettingsLoader {
 
         com.extantape.mayor.rules.HomeWorlds homeWorlds = homeWorlds(base, circles);
 
+        String shownAs = base.contains("book-authors.shown-as") ? String.valueOf(base.get("book-authors.shown-as")).trim() : "Unknown";
+        if (base.contains("book-authors.shown-as") && !base.isString("book-authors.shown-as")) errors.add(CONFIG + ": book-authors.shown-as must be text.");
+        if (shownAs.isEmpty()) shownAs = "Unknown";
+        Settings.BookAuthors bookAuthors = new Settings.BookAuthors(bool(CONFIG, base, "book-authors.hide", true), shownAs);
+
         Reach reach = new Reach(circles, circleOnly, groupOf, suffixes);
         CommandRules commands = new CommandRules(reach, filter, filtered.messages(), filtered.maskForViewers(),
                 Set.copyOf(strings(CONFIG, base, "private-message-commands")), Set.copyOf(strings(CONFIG, base, "reply-commands")),
                 Set.copyOf(strings(CONFIG, base, "broadcast-commands")), blocked);
         if (!errors.isEmpty()) return new Result(null, List.copyOf(errors), List.copyOf(warnings));
-        return new Result(new Settings(reach, commands, filter, filtered, nobodyHeard, List.copyOf(quipList), Map.copyOf(messages), presence.equals("reach"), homeWorlds),
+        return new Result(new Settings(reach, commands, filter, filtered, nobodyHeard, List.copyOf(quipList), Map.copyOf(messages), presence.equals("reach"), homeWorlds, bookAuthors),
                 List.of(), List.copyOf(warnings));
     }
 

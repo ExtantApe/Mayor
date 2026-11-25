@@ -24,6 +24,11 @@ import java.util.Locale;
  *   mt tps                   prints "HRT tps <1m> mspt <avg>"
  *   mt worlds                prints "HRT worlds <name,name,...>"
  *   mt give <player> <item>  puts one item in the player's main hand
+ *   mt book <player> <author> <title>  puts a signed book in the player's first slot (D291)
+ *   mt drop <player>         drops the player's first-slot item 20 blocks east, where nobody stands, and remembers the spot
+ *   mt near <player> <other> moves a player onto another player's spot, or onto the last dropped item if other is "drop"
+ *   mt books <player>        prints "HRT books <player> <author>/<title>;..." for each written book carried
+ *   mt chest <player>        puts the first-slot item in a chest at the player's spot, opens it for them and prints "HRT chest <player> ..."
  */
 public final class LiveTestHelper extends JavaPlugin implements Listener {
     /** Bots stand still in made-up worlds, so a death only means a bad spawn point. Keep them alive, and say if one dies anyway. */
@@ -31,6 +36,8 @@ public final class LiveTestHelper extends JavaPlugin implements Listener {
     public void onDamage(EntityDamageEvent event) {
         if (event.getEntity() instanceof Player) event.setCancelled(true);
     }
+
+    private org.bukkit.Location lastDrop;
 
     /** Players a test killed on purpose (mt grave), so their death isn't reported as a bad spawn. */
     private final java.util.Set<String> planned = new java.util.HashSet<>();
@@ -108,11 +115,90 @@ public final class LiveTestHelper extends JavaPlugin implements Listener {
                             getLogger().info("HRT give " + p.getName() + " " + m.getKey().getKey());
                             return 1;
                         }))))
+                .then(Commands.literal("book").then(Commands.argument("player", StringArgumentType.word())
+                        .then(Commands.argument("author", StringArgumentType.word())
+                                .then(Commands.argument("title", StringArgumentType.word()).executes(ctx -> {
+                                    Player p = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "player"));
+                                    if (p == null) {
+                                        getLogger().info("HRT book FAILED");
+                                        return 0;
+                                    }
+                                    org.bukkit.inventory.ItemStack book = new org.bukkit.inventory.ItemStack(org.bukkit.Material.WRITTEN_BOOK);
+                                    org.bukkit.inventory.meta.BookMeta meta = (org.bukkit.inventory.meta.BookMeta) book.getItemMeta();
+                                    meta.setAuthor(StringArgumentType.getString(ctx, "author"));
+                                    meta.setTitle(StringArgumentType.getString(ctx, "title"));
+                                    meta.addPages(net.kyori.adventure.text.Component.text("A made-up page."));
+                                    book.setItemMeta(meta);
+                                    p.getInventory().setItem(0, book);
+                                    getLogger().info("HRT book " + p.getName());
+                                    return 1;
+                                })))))
+                .then(Commands.literal("drop").then(Commands.argument("player", StringArgumentType.word()).executes(ctx -> {
+                    Player p = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "player"));
+                    org.bukkit.inventory.ItemStack held = p == null ? null : p.getInventory().getItem(0);
+                    if (held == null) {
+                        getLogger().info("HRT drop FAILED");
+                        return 0;
+                    }
+                    p.getInventory().setItem(0, null);
+                    lastDrop = p.getLocation().add(20, 0, 0);
+                    p.getWorld().dropItem(lastDrop, held);
+                    getLogger().info("HRT drop " + p.getName());
+                    return 1;
+                })))
+                .then(Commands.literal("near").then(Commands.argument("player", StringArgumentType.word())
+                        .then(Commands.argument("other", StringArgumentType.word()).executes(ctx -> {
+                            Player p = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "player"));
+                            Player o = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "other"));
+                            if (p == null || (o == null && lastDrop == null)) {
+                                getLogger().info("HRT near FAILED");
+                                return 0;
+                            }
+                            p.teleportAsync(o == null ? lastDrop : o.getLocation()).thenAccept(ok -> getLogger().info("HRT near " + p.getName() + " " + ok));
+                            return 1;
+                        }))))
+                .then(Commands.literal("books").then(Commands.argument("player", StringArgumentType.word()).executes(ctx -> {
+                    Player p = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "player"));
+                    if (p == null) {
+                        getLogger().info("HRT books FAILED");
+                        return 0;
+                    }
+                    getLogger().info("HRT books " + p.getName() + " " + describe(p.getInventory().getContents()));
+                    return 1;
+                })))
+                .then(Commands.literal("chest").then(Commands.argument("player", StringArgumentType.word()).executes(ctx -> {
+                    Player p = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "player"));
+                    org.bukkit.inventory.ItemStack held = p == null ? null : p.getInventory().getItem(0);
+                    if (held == null) {
+                        getLogger().info("HRT chest FAILED");
+                        return 0;
+                    }
+                    org.bukkit.block.Block block = p.getLocation().add(2, 0, 0).getBlock();
+                    block.setType(org.bukkit.Material.CHEST);
+                    org.bukkit.block.Chest chest = (org.bukkit.block.Chest) block.getState();
+                    chest.getBlockInventory().setItem(0, held);
+                    p.getInventory().setItem(0, null);
+                    p.openInventory(chest.getBlockInventory());
+                    // The open event has run by now; read what the player is looking at.
+                    getLogger().info("HRT chest " + p.getName() + " " + describe(p.getOpenInventory().getTopInventory().getContents()));
+                    Bukkit.getScheduler().runTaskLater(this, () -> p.closeInventory(), 20L);
+                    return 1;
+                })))
                 .then(Commands.literal("tps").executes(ctx -> {
                     double[] tps = Bukkit.getTPS();
                     getLogger().info(String.format(Locale.ROOT, "HRT tps %.2f mspt %.2f", tps[0], Bukkit.getAverageTickTime()));
                     return 1;
                 }))
                 .build()));
+    }
+
+    /** "author/title;author/title" for each written book, so a test sees what the server holds (what the client is sent). */
+    private static String describe(org.bukkit.inventory.ItemStack[] items) {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        for (org.bukkit.inventory.ItemStack item : items) {
+            if (item == null || item.getType() != org.bukkit.Material.WRITTEN_BOOK || !(item.getItemMeta() instanceof org.bukkit.inventory.meta.BookMeta meta)) continue;
+            out.add(meta.getAuthor() + "/" + net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(meta.title()));
+        }
+        return out.isEmpty() ? "NONE" : String.join(";", out);
     }
 }

@@ -41,6 +41,17 @@ presence: everyone
 #       fallback: station
 home-worlds: {}
 
+# Who sees the author of a written book (D291). With hide on, a player sees a book's author only if they share a
+# circle with that person, or are that person. Everyone else sees shown-as in its place, and a title that holds the
+# author's name shows **** for it. The true author is kept on the book and comes back for anyone who may see it, so
+# nothing is lost. This covers a signed book, and the quest journal (BetonQuest) that carries its owner's name.
+# Books in chests, hoppers, lecterns, item frames and dropped on the ground show no author to anyone until someone
+# who may see it holds the book. With no circles listed, nothing is hidden. If the config can't be read at startup,
+# only the author sees their name. Book pages aren't checked for names.
+book-authors:
+  hide: true
+  shown-as: Unknown
+
 # Worlds that count as one for chat. A world not listed here joins the world it's named after when its name ends
 # with one of the dimension-suffixes below, so "survival_nether" goes with "survival".
 #   world-groups:
