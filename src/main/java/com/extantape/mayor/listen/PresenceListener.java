@@ -2,9 +2,13 @@ package com.extantape.mayor.listen;
 
 import com.extantape.mayor.MayorPlugin;
 import com.extantape.mayor.rules.Presence;
+import com.extantape.mayor.rules.PresenceMessages;
 import com.extantape.mayor.rules.Reach;
 import com.extantape.mayor.rules.Subject;
 import net.kyori.adventure.text.Component;
+import java.util.IdentityHashMap;
+import java.util.Map;
+
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -38,29 +42,33 @@ public final class PresenceListener implements Listener {
         return Presence.maySee(Subject.of(viewer), Subject.of(other), byReach, reach);
     }
 
+    /** Sends the line to each allowed viewer and to the console, and nowhere else. A null message sends nothing. */
+    private void deliver(Component message, Player source) {
+        MayorPlugin.State state = plugin.state();
+        Reach reach = state == null ? null : state.settings().reach();
+        boolean byReach = state != null && state.settings().presenceByReach();
+        Map<Subject, Player> viewers = new IdentityHashMap<>();
+        for (Player p : Bukkit.getOnlinePlayers()) viewers.put(Subject.of(p), p);
+        PresenceMessages.deliver(message, Subject.of(source), viewers.keySet(), byReach, reach,
+                viewer -> viewers.get(viewer).sendMessage(message), m -> Bukkit.getConsoleSender().sendMessage(m));
+    }
+
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onJoin(PlayerJoinEvent event) {
-        Player joined = event.getPlayer();
         if (limited()) {
             Component message = event.joinMessage();
             event.joinMessage(null);
-            if (message != null) {
-                for (Player viewer : Bukkit.getOnlinePlayers()) if (viewer != joined && maySee(viewer, joined)) viewer.sendMessage(message);
-                Bukkit.getConsoleSender().sendMessage(message);
-            }
+            deliver(message, event.getPlayer());
         }
         refresh();
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onQuit(PlayerQuitEvent event) {
-        Player left = event.getPlayer();
         if (!limited()) return;
         Component message = event.quitMessage();
         event.quitMessage(null);
-        if (message == null) return;
-        for (Player viewer : Bukkit.getOnlinePlayers()) if (viewer != left && maySee(viewer, left)) viewer.sendMessage(message);
-        Bukkit.getConsoleSender().sendMessage(message);
+        deliver(message, event.getPlayer());
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
