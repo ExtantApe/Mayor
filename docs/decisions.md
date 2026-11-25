@@ -33,3 +33,9 @@ Owner decisions for HouseRules, newest first.
 ## 2026-11-24 (rename)
 
 - **Posse (owner, D292, K736):** Mayor is renamed Posse, after a name check found Posse free on Modrinth, SpigotMC, Hangar and GitHub. Released as 0.11.0 so the version line continues. D196 applies: no old name, command, permission, folder or package is kept, and installs rename the folder and permission nodes before first start. Entries above this one keep saying Mayor, because they record what was decided then.
+
+## 2026-11-25: Rename safety, checklist and no old keys
+
+After the Trust and Safety review of the rename, the owner chose:
+- **No folder guard in code** ("No one else uses this yet"). Instead, the live checklist checks `/posse status` and `/posse check` with players kept out.
+- **No reading of old `mayor:` book keys** ("Get rid of mayor yes"). No server ran 0.10.0, so no book loses its author.
