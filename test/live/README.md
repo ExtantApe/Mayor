@@ -39,6 +39,7 @@ It takes about 4 minutes. The summary lists failures and skipped checks. The ful
 | --- | --- |
 | No config | A fresh install changes nothing: everyone hears everyone. |
 | Reach matrix | Eight players in two circles, with no circle, and with bypass, across two world groups (one by suffix, one listed), their Nether and End, and a circle-only world. Public chat from each, and 336 private messages over six commands, match an independent model of the rule. |
+| Join and leave lines | `presence-messages.js`, run with `MAYOR_SUITE=presence-messages.js test/live/run.sh <version>` (about 1 minute): six made-up players join and leave in turn, first with `presence: everyone` as a control, then `reach`. Each line is read from mineflayer's text events and from the raw chat packets, and both must match. The main suite's presence part also covers it. |
 | `/circles` | Lists your circles and exactly who can hear you, a count without `mayor.circles.names`, and an explanation in a circle-only world. |
 | Commands | Blocked commands in plain, namespaced and mixed-case forms, unlisted ones passing, `/me` off except with bypass. |
 | Replies | `/r` with nobody to reply to, and after the other player moves out of reach. |

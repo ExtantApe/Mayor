@@ -73,3 +73,13 @@ Each promise in the README, and the test that holds it to it. "Live" is `test/li
 
 - **Covered:** `WordFilter.mask` (only blocked words change, phrases masked whole, the allow list, spacing kept, the mask length gives nothing away, nothing blocked gives the same text), the setting off by default and read from `filter.yml`, private messages adult to kid masked and adult to adult as written, kids still stopped. Live on 26.3: chat masked for a player without the bypass and as written for one with it, private messages both ways, clean text unchanged, a kid's own word still stopped, an adult's book saved masked (read back from the server).
 - **Skipped:** signs and anvil renames, for the same reason as before (bots can't). Item names and signs share the masking code with books. Live 26.2 wasn't rerun; the change uses no version-specific API.
+
+## 2026-11-24: join and leave lines under `presence: reach` (K682)
+
+A rehearsal bot run on another server saw no join or leave line at all, controls included, and asked whether Mayor drops them or the bots can't see them.
+
+- **Result:** Mayor delivers them. On throwaway Paper 26.1.2, 26.2 and 26.3, with vanilla join messages on, every control (same circle, and everyone under `presence: everyone`) received the line, and the cross-circle case didn't. Each check reads mineflayer's text events and the raw chat packets, and the two agree. The console logged every line. So the missing lines in that run were the harness or that server's setup, not Mayor. Nothing was changed in Mayor's behavior.
+- **Covered, added:** `PresenceMessagesTest` (same circle receives; other circle doesn't; the visitor in both circles is seen by everyone and sees everyone; the console always gets the line, even with nobody to send it to; the joiner isn't sent their own line; a null message, as with Essentials' custom join message set to none, sends nothing anywhere; `presence: everyone`; paused rules go to the console only). The listener now calls the same `PresenceMessages.deliver` the test runs. Live `presence-messages.js`: six made-up players (two kids, two adults, one in both circles, one with no circle) join and leave in turn in a circle-only default world, first under `presence: everyone` as a control, then `reach`.
+- **Skipped:** a plugin that sets a join message after Mayor at MONITOR priority, since Mayor can't see it and no setting could help. Bots on the 26.x native protocol, since the suite uses 1.21.11 through ViaVersion and ViaBackwards.
+- **Known limit:** the joiner's own join line isn't sent to them, which vanilla would do. It can't leak anything; noted in case a client expects it.
+

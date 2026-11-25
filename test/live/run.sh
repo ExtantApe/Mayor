@@ -2,6 +2,7 @@
 # Builds one throwaway Paper server on 127.0.0.1, runs the Mayor acceptance tests, and deletes it, even when
 # a test fails. See README.md in this folder.
 # Usage: MAYOR_ACCEPT_EULA=1 test/live/run.sh <paper version>
+# MAYOR_SUITE=presence-messages.js runs only the join and leave message check (default suite.js).
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 REPO=$(cd "$HERE/../.." && pwd)
@@ -62,7 +63,7 @@ cd "$HERE"
 LOG=$WORK/$NAME.log
 echo "== Running the suite (log: $LOG)"
 status=0
-node suite.js "$NAME" "paper-$VERSION.jar" "$PORT" > "$LOG" 2>&1 || status=1
+node "${MAYOR_SUITE:-suite.js}" "$NAME" "paper-$VERSION.jar" "$PORT" > "$LOG" 2>&1 || status=1
 grep -E "^(FAIL|SKIP)|^SUMMARY|CRASHED" "$LOG" || true
 echo "== Deleting $SERVER"
 exit $status

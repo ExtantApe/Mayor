@@ -66,7 +66,7 @@ class Server {
 // ---- Bot ----
 class Bot {
   constructor(name, port) {
-    this.name = name; this.chat = []; this.kicked = null; this.ended = null;
+    this.name = name; this.chat = []; this.raw = []; this.kicked = null; this.ended = null;
     this.bot = mineflayer.createBot({ host: '127.0.0.1', port, username: name, version: '1.21.11', auth: 'offline', physicsEnabled: false, hideErrors: true });
     const c = this.bot._client;
     // Tests move players from the server. Position replies only add noise, and through ViaBackwards they can get
@@ -77,6 +77,8 @@ class Bot {
       this.bot.once('spawn', () => { this.bot.physicsEnabled = false; res(); });
       this.bot.once('end', (r) => rej(new Error(`${name} disconnected before spawning: ${r}`)));
     });
+    // Raw chat packets of every kind, kept as text, so a check doesn't depend on how mineflayer parses system chat.
+    c.on('packet', (data, meta) => { if (/chat/.test(meta.name)) this.raw.push({ t: Date.now(), n: meta.name, m: JSON.stringify(data) }); });
     this.bot.on('messagestr', (m) => this.chat.push({ t: Date.now(), m }));
     this.bot.on('kicked', (r) => { this.kicked = JSON.stringify(r); });
     this.bot.on('end', (r) => { this.ended = r; });
@@ -85,6 +87,10 @@ class Bot {
   say(text) { this.bot.chat(text); }
   mark() { return this.chat.length; }
   heard(re, from = 0) { return this.chat.slice(from).some((c) => (typeof re === 'string' ? c.m.includes(re) : re.test(c.m))); }
+  /** Whether any raw chat packet since the mark mentions the text (a player name inside a translatable line, say). */
+  rawMark() { return this.raw.length; }
+  rawHeard(re, from = 0) { return this.raw.slice(from).some((c) => (typeof re === 'string' ? c.m.includes(re) : re.test(c.m))); }
+  rawSample(from = 0) { return this.raw.slice(from, from + 3).map((c) => c.n + ' ' + c.m.slice(0, 160)).join(' | '); }
   lines(from = 0) { return this.chat.slice(from).map((c) => c.m); }
   async waitFor(re, timeoutMs = 4000, from = 0) {
     const end = Date.now() + timeoutMs;
