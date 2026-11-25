@@ -37,6 +37,14 @@ public final class HomeWorlds {
      */
     public record Move(String world, boolean degraded, String wanted, String message, Kind kind) {}
 
+    /** How long a first-ever join waits before its world is checked, so first-spawn placement happens first (D297). One second. */
+    public static final long FIRST_JOIN_DELAY_TICKS = 20;
+
+    /** Ticks to wait before checking a player's world after they join: 0 for someone who has played here before. */
+    public static long joinDelayTicks(boolean playedBefore) {
+        return playedBefore ? 0 : FIRST_JOIN_DELAY_TICKS;
+    }
+
     public static final HomeWorlds OFF = new HomeWorlds(Map.of(), null);
 
     private final Map<String, Entry> byCircle;

@@ -55,9 +55,23 @@ public final class HomeWorldsListener implements Listener {
         } else plugin.tell(player, key, vars);
     }
 
+    /**
+     * A player who has never joined is placed by WelcomeWagon or Multiverse's first-spawn after this event, so the
+     * check waits {@link HomeWorlds#joinDelayTicks} ticks and then looks at where they ended up (D297). A returning
+     * player is checked at once, as before. If the player quits first there is nothing to do, and if the move doesn't
+     * go through they are disconnected, never left in a world they aren't allowed in.
+     */
     @EventHandler(priority = EventPriority.LOW)
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
+        long delay = HomeWorlds.joinDelayTicks(player.hasPlayedBefore());
+        if (delay <= 0) checkAfterJoin(player);
+        else Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (player.isOnline()) checkAfterJoin(player);
+        }, delay);
+    }
+
+    private void checkAfterJoin(Player player) {
         HomeWorlds.Move move = decide(player, player.getWorld().getName());
         if (move == null) return;
         player.teleportAsync(spawnOf(move)).thenAccept(ok -> {

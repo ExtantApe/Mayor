@@ -1,6 +1,7 @@
 // Home worlds (D290) on one throwaway server: a rejoin and a respawn, plus the world-change safety net and a missing
 // fallback. See README.md in this folder. Usage: node home-worlds.js <dir> <jar> <port>, relative to the work folder.
 // All names are made up. Run it with POSSE_SUITE=home-worlds.js test/live/run.sh <version>.
+const crypto = require('crypto');
 const { sleep, check, section, summary, Server, Bot } = require('./lib.js');
 const [dir, jar, port] = process.argv.slice(2);
 
@@ -42,7 +43,7 @@ const text = (n, re, from = 0) => bots[n].heard(re, from);
   await s.start();
 
   section('Setup: made-up worlds, circles, and where everyone last was');
-  for (const w of ['kidland', 'kidland_nether', 'grownups', 'station']) await s.run(`mt world ${w}`, new RegExp(`HRT world (${w}|FAILED)`), 60000);
+  for (const w of ['kidland', 'kidland_nether', 'grownups', 'station', 'lobby']) await s.run(`mt world ${w}`, new RegExp(`HRT world (${w}|FAILED)`), 60000);
   for (const n of NAMES) await join(n);
   for (const [n, p] of Object.entries(PEOPLE)) for (const c of p.circles) await s.run(`lp user ${n} permission set posse.circle.${c} true`, null);
   await sleep(1000);
@@ -95,6 +96,30 @@ const text = (n, re, from = 0) => bots[n].heard(re, from);
   check('an adult is left where they went', (await where('A1')) === 'kidland', await where('A1'));
   await s.run('mt tp X1 grownups', /HRT tp X1 grownups true/, 8000);
   check('a player with no circle is sent back to the station', (await waitWhere('X1', 'station')) === 'station', await where('X1'));
+
+  section('First join (D297): placement after the join event is respected, a disallowed placement is still undone');
+  // The lobby is a kids' world here. F1 is placed there on first join, F2 in the adults' world, F3 has no circle.
+  // O1 holds only the old mayor.* nodes, which grant nothing.
+  s.writeConfig('config.yml', CONFIG.replace('[kidland, kidland_nether]', '[kidland, kidland_nether, lobby]'));
+  await reload();
+  const uuid = (n) => { const h = crypto.createHash('md5').update('OfflinePlayer:' + n).digest(); h[6] = (h[6] & 0x0f) | 0x30; h[8] = (h[8] & 0x3f) | 0x80; const x = h.toString('hex'); return `${x.slice(0, 8)}-${x.slice(8, 12)}-${x.slice(12, 16)}-${x.slice(16, 20)}-${x.slice(20)}`; };
+  const fresh = { F1: ['posse.circle.kids'], F2: ['posse.circle.kids'], F3: [], O1: ['mayor.circle.kids', 'mayor.bypass', 'mayor.filter.bypass'] };
+  for (const [n, perms] of Object.entries(fresh)) for (const p of perms) await s.run(`lp user ${uuid(n)} permission set ${p} true`, null);
+  for (const [n, w] of Object.entries({ F1: 'lobby', F2: 'grownups', F3: 'grownups', O1: 'grownups' })) await s.run(`mt firstspawn ${n} ${w}`, /HRT firstspawn set/, 5000);
+  for (const n of Object.keys(fresh)) { bots[n] = new Bot(n, +port); await bots[n].spawned; }
+  await sleep(6000);
+  check('F1, a new kid placed in the allowed lobby, stays there', (await where('F1')) === 'lobby', await where('F1'));
+  check('F1 is told nothing', !text('F1', /HOMEKID|wait here/));
+  check('F2, a new kid placed in the adults\' world, ends in kidland', (await waitWhere('F2', 'kidland')) === 'kidland', await where('F2'));
+  check('F3, a new player with no circle placed in the adults\' world, ends in the station', (await waitWhere('F3', 'station')) === 'station', await where('F3'));
+  check('O1, with only old mayor.circle.kids, is in no circle, so is moved to the station', (await waitWhere('O1', 'station')) === 'station', await where('O1'));
+  check('nobody was disconnected', Object.keys(fresh).every((n) => !bots[n].kicked && !bots[n].ended));
+  const chk = await s.run('posse check O1 F2', /O1 can('t)? reach F2[^\n]*/, 5000);
+  check('an old mayor.bypass grants no bypass: O1 cannot reach F2', chk && chk[1] === "'t" && !/bypass/.test(chk[0]), chk && chk[0]);
+  const chk2 = await s.run('posse check F2 O1', /F2 can('t)? reach O1[^\n]*/, 5000);
+  check('and F2 cannot reach O1 either', chk2 && chk2[1] === "'t", chk2 && chk2[0]);
+  s.writeConfig('config.yml', CONFIG);
+  await reload();
 
   section('Fails closed: a missing fallback world');
   s.writeConfig('config.yml', CONFIG.replace('kidland_nether]\n    fallback: kidland', 'kidland_nether, ghostland]\n    fallback: ghostland'));

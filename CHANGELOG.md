@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.11.1
+
+- **A new kid lands where first-spawn puts them** (D297). With `home-worlds` on, a player's first-ever join is now checked 20 ticks (one second) after they join, not at the join, so WelcomeWagon or Multiverse's first-spawn places them first. A new kid placed in an allowed world, such as the lobby, stays there and is told nothing. One placed anywhere else is moved to their fallback as before. A returning player is still checked at the join itself, so nobody who has played before waits a second in a wrong world. If the player quits before the check, nothing happens. If the move doesn't go through, they are disconnected, as before. The respawn and world-change checks are unchanged.
+- Old `mayor.*` permission nodes are tested to grant nothing: a player with only `mayor.circle.kids` is in no circle, and one with `mayor.bypass` or `mayor.filter.bypass` has no bypass.
+- No Mayor or HouseRules wording remains in anything Posse ships (a unit test now checks `config.yml`, `filter.yml`, `quips.yml` and `paper-plugin.yml`). A `[HouseRules]` prefix on `/posse status` comes from a `config.yml` carried over from an old install, because every message line lives in that file. Change those lines to `[Posse]` when you move the folder.
+- Tested: `./gradlew build` (unit tests, including `OldNodesTest`, `ShippedTextTest` and the new `HomeWorldsTest` cases), and the home-worlds bot suite on 26.1.2, 26.2 and 26.3 with new bots placed by a stand-in first-spawn (an allowed lobby, an adults' world, and no circle) and a player holding only old `mayor.*` nodes. Not tested: a real WelcomeWagon or Multiverse first-spawn, a failing delayed move (the kick path is unchanged code), and a real game client.
+
 ## 0.11.0
 
 - **Mayor is now Posse** (D292). Nothing about how it behaves has changed: every circle filter (chat, private messages, who's online, home worlds, book authors, signs, anvil renames, map shares) works as in 0.10.0 and fails closed the same way. No old name, command, permission or folder is kept, so a server owner must rename these before the first start:

@@ -116,4 +116,19 @@ class HomeWorldsTest {
     void namedWorldsListsEveryWorldTheSectionMentions() {
         assertEquals(Set.of("kidland", "kidland_nether", "kidland_the_end", "station"), configured().namedWorlds());
     }
+
+    @Test
+    void aFirstJoinWaitsForPlacementAndAReturningPlayerDoesNot() {
+        assertEquals(20, HomeWorlds.joinDelayTicks(false));
+        assertEquals(0, HomeWorlds.joinDelayTicks(true));
+    }
+
+    @Test
+    void aKidPlacedInAnAllowedLobbyStaysAndOneInADisallowedWorldIsMoved() {
+        Map<String, HomeWorlds.Entry> by = new LinkedHashMap<>();
+        by.put("kids", new HomeWorlds.Entry(Set.of("kidland", "cave"), "kidland", null));
+        HomeWorlds lobbyAllowed = new HomeWorlds(by, null);
+        assertNull(decide(lobbyAllowed, player("Kit", "cave", circle("kids"))));
+        assertEquals("kidland", decide(lobbyAllowed, player("Kit", "grownups", circle("kids"))).world());
+    }
 }

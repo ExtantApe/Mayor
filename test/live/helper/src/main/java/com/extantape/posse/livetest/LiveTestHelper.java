@@ -20,6 +20,8 @@ import java.util.Locale;
  * Test only. One console command, /mt:
  *   mt world <name>          makes a small flat world (a name ending in _nether or _the_end gets that environment)
  *   mt tp <player> <world>   moves a player to a world's spawn
+ *   mt firstspawn <player> <world>  when that player next joins for the first time, moves them to the world 1 tick
+ *                            after the join event, as WelcomeWagon or Multiverse's first-spawn would (D297)
  *   mt where <player>        prints "HRT where <player> <world>"
  *   mt tps                   prints "HRT tps <1m> mspt <avg>"
  *   mt worlds                prints "HRT worlds <name,name,...>"
@@ -47,6 +49,20 @@ public final class LiveTestHelper extends JavaPlugin implements Listener {
     public void onDeath(PlayerDeathEvent event) {
         String n = event.getPlayer().getName();
         getLogger().info((planned.remove(n) ? "HRT planned death " : "HRT death ") + n);
+    }
+
+    /** Made-up first-spawn placements: player name to world name (mt firstspawn). */
+    private final java.util.Map<String, String> firstSpawn = new java.util.concurrent.ConcurrentHashMap<>();
+
+    @EventHandler(priority = org.bukkit.event.EventPriority.HIGHEST)
+    public void onFirstJoin(org.bukkit.event.player.PlayerJoinEvent event) {
+        Player p = event.getPlayer();
+        String world = firstSpawn.remove(p.getName());
+        if (world == null || p.hasPlayedBefore()) return;
+        Bukkit.getScheduler().runTaskLater(this, () -> {
+            World w = Bukkit.getWorld(world);
+            if (w != null && p.isOnline()) p.teleportAsync(w.getSpawnLocation()).thenAccept(ok -> getLogger().info("HRT firstspawn " + p.getName() + " " + world + " " + ok));
+        }, 1L);
     }
 
     @Override
@@ -91,6 +107,12 @@ public final class LiveTestHelper extends JavaPlugin implements Listener {
                                 p.setHealth(0);
                                 getLogger().info("HRT grave " + p.getName() + " " + p.getWorld().getName() + " " + at.getBlockX() + " " + at.getBlockZ());
                             }, 5L);
+                            return 1;
+                        }))))
+                .then(Commands.literal("firstspawn").then(Commands.argument("player", StringArgumentType.word())
+                        .then(Commands.argument("world", StringArgumentType.word()).executes(ctx -> {
+                            firstSpawn.put(StringArgumentType.getString(ctx, "player"), StringArgumentType.getString(ctx, "world"));
+                            getLogger().info("HRT firstspawn set");
                             return 1;
                         }))))
                 .then(Commands.literal("where").then(Commands.argument("player", StringArgumentType.word()).executes(ctx -> {

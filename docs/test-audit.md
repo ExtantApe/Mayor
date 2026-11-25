@@ -3,6 +3,17 @@
 Kept by this repo's owning session (Minecraft: Plugins Lead), per `~/Code/CLAUDE.md`, "Test self-audits". Newest first.
 
 
+## 2026-11-25: first join and old nodes (0.11.1, D297)
+
+| Promise | Covered by |
+| --- | --- |
+| A first join is checked after a delay, a returning player at once | unit `HomeWorldsTest.aFirstJoinWaits...` |
+| A new kid placed in an allowed world stays and hears nothing; one placed elsewhere is moved | unit; bot `home-worlds.js`, "First join" (fails if the delay is removed) |
+| Old `mayor.circle.*` and `mayor.bypass` grant nothing | unit `OldNodesTest`; bot, a player with only old nodes is moved as no-circle and `/posse check` says they can't reach |
+| No old plugin name in shipped text | unit `ShippedTextTest` |
+
+Gaps: the stand-in first-spawn is a helper plugin, not a real WelcomeWagon or Multiverse. The kick after a failed delayed move is shared with the old code and has no bot test.
+
 ## 2026-11-25: book authors (0.10.0, D291, after a feature)
 
 | Promise | Covered by |
