@@ -1,5 +1,5 @@
-name: MayorLiveTest
+name: PosseLiveTest
 version: '1'
-main: com.extantape.mayor.livetest.LiveTestHelper
+main: com.extantape.posse.livetest.LiveTestHelper
 api-version: '26.1'
-description: Test only. Makes small worlds, moves players and reports tick times for the Mayor live tests. Never install on a real server.
+description: Test only. Makes small worlds, moves players and reports tick times for the Posse live tests. Never install on a real server.

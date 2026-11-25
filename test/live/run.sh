@@ -1,21 +1,21 @@
 #!/usr/bin/env bash
-# Builds one throwaway Paper server on 127.0.0.1, runs the Mayor acceptance tests, and deletes it, even when
+# Builds one throwaway Paper server on 127.0.0.1, runs the Posse acceptance tests, and deletes it, even when
 # a test fails. See README.md in this folder.
-# Usage: MAYOR_ACCEPT_EULA=1 test/live/run.sh <paper version>
-# MAYOR_SUITE=presence-messages.js runs only the join and leave message check; home-worlds.js runs the home-worlds check; book-authors.js runs the book author check (default suite.js).
+# Usage: POSSE_ACCEPT_EULA=1 test/live/run.sh <paper version>
+# POSSE_SUITE=presence-messages.js runs only the join and leave message check; home-worlds.js runs the home-worlds check; book-authors.js runs the book author check (default suite.js).
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 REPO=$(cd "$HERE/../.." && pwd)
-WORK=$(mkdir -p "${MAYOR_LIVE_DIR:-$HERE/work}" && cd "${MAYOR_LIVE_DIR:-$HERE/work}" && pwd)
-PORT=${MAYOR_PORT:-25619}
+WORK=$(mkdir -p "${POSSE_LIVE_DIR:-$HERE/work}" && cd "${POSSE_LIVE_DIR:-$HERE/work}" && pwd)
+PORT=${POSSE_PORT:-25619}
 VERSION=${1:?Usage: run.sh <paper version>}
 
-if [ "${MAYOR_ACCEPT_EULA:-}" != "1" ]; then
+if [ "${POSSE_ACCEPT_EULA:-}" != "1" ]; then
   echo "This starts a Minecraft server, which means accepting the Minecraft EULA (https://aka.ms/MinecraftEULA)."
-  echo "Set MAYOR_ACCEPT_EULA=1 to accept it."
+  echo "Set POSSE_ACCEPT_EULA=1 to accept it."
   exit 2
 fi
-JAR=$(ls "$REPO"/build/libs/Mayor-*.jar 2>/dev/null | head -1)
+JAR=$(ls "$REPO"/build/libs/Posse-*.jar 2>/dev/null | head -1)
 HELPER=$REPO/test/live/helper/build/libs/LiveTestHelper.jar
 FAKEMAP=$REPO/test/live/fakeminimap/build/libs/LiveTestFakeMinimap.jar
 missing=0
@@ -25,7 +25,7 @@ done
 for f in "$JAR" "$HELPER" "$FAKEMAP"; do [ -n "$f" ] && [ -f "$f" ] || { echo "Missing a built jar. Run ./gradlew build first."; missing=1; }; done
 [ -d "$HERE/node_modules/mineflayer" ] || { echo "Run npm ci in test/live first."; missing=1; }
 [ $missing = 0 ] || exit 2
-if pgrep -f "server-[0-9.]*/.*paper-|paper-.*\.jar nogui" >/dev/null && [ -z "${MAYOR_ALLOW_OTHER:-}" ]; then
+if pgrep -f "server-[0-9.]*/.*paper-|paper-.*\.jar nogui" >/dev/null && [ -z "${POSSE_ALLOW_OTHER:-}" ]; then
   echo "Note: another Paper server seems to be running on this machine. Port $PORT is used for this one."
 fi
 
@@ -53,17 +53,17 @@ level-type=minecraft\:flat
 generate-structures=false
 view-distance=4
 simulation-distance=4
-motd=Mayor throwaway test server
+motd=Posse throwaway test server
 PROPS
 cp "$WORK/ViaVersion.jar" "$WORK/ViaBackwards.jar" "$WORK/LuckPerms.jar" "$HELPER" "$FAKEMAP" "$SERVER/plugins/"
-cp "$JAR" "$SERVER/plugins/Mayor.jar"
+cp "$JAR" "$SERVER/plugins/Posse.jar"
 # Optional: a LanternGraves jar, for the graves part (D231). Without it, that part is skipped.
-if [ -n "${MAYOR_LG_JAR:-}" ]; then cp "$MAYOR_LG_JAR" "$SERVER/plugins/LanternGraves.jar"; fi
+if [ -n "${POSSE_LG_JAR:-}" ]; then cp "$POSSE_LG_JAR" "$SERVER/plugins/LanternGraves.jar"; fi
 cd "$HERE"
 LOG=$WORK/$NAME.log
 echo "== Running the suite (log: $LOG)"
 status=0
-node "${MAYOR_SUITE:-suite.js}" "$NAME" "paper-$VERSION.jar" "$PORT" > "$LOG" 2>&1 || status=1
+node "${POSSE_SUITE:-suite.js}" "$NAME" "paper-$VERSION.jar" "$PORT" > "$LOG" 2>&1 || status=1
 grep -E "^(FAIL|SKIP)|^SUMMARY|CRASHED" "$LOG" || true
 echo "== Deleting $SERVER"
 exit $status

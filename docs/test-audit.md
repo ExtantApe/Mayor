@@ -18,7 +18,7 @@ Kept by this repo's owning session (Minecraft: Plugins Lead), per `~/Code/CLAUDE
 | Chest view follows the viewer | bot (written, not run) |
 | Config: default on, off, custom word, a typo is an error | unit `SettingsLoaderTest` |
 
-Gaps: the bot test could not run because the disk was under 40 GB free, so every item-swap path is untested on a server. Not driven by bots at all: item frames, lecterns, hoppers, death drops and the one-tick view after a click. The item swap itself has no unit test, since it needs a running server. Run `MAYOR_SUITE=book-authors.js MAYOR_PORT=25733 test/live/run.sh <version>` on 26.1.2, 26.2 and 26.3 before release.
+Gaps: the bot test could not run because the disk was under 40 GB free, so every item-swap path is untested on a server. Not driven by bots at all: item frames, lecterns, hoppers, death drops and the one-tick view after a click. The item swap itself has no unit test, since it needs a running server. Run `POSSE_SUITE=book-authors.js POSSE_PORT=25733 test/live/run.sh <version>` on 26.1.2, 26.2 and 26.3 before release.
 
 ## 2026-11-25: home worlds (0.9.0, after a feature)
 
@@ -51,7 +51,7 @@ Gaps skipped: death and advancement messages and nametags are out of scope and s
 
 ## 2026-11-10: the --json console
 
-What's new: every `/mayor` command takes `--json <id>` (Signalbox format 1), and there's `/mayor describe`. Since the first audit, only CI changes had landed, so this covers the console alone.
+What's new: every `/posse` command takes `--json <id>` (Signalbox format 1), and there's `/posse describe`. Since the first audit, only CI changes had landed, so this covers the console alone.
 
 | Promise | Covered by |
 | --- | --- |
@@ -61,7 +61,7 @@ What's new: every `/mayor` command takes `--json <id>` (Signalbox format 1), and
 | While chat is paused, `check` refuses rather than guess | unit `whilePausedCheckRefusesInsteadOfGuessing` |
 | An offline player is said plainly | unit `anOfflinePlayerIsSaidPlainly`; live |
 | `status` and `reload` report circles, filter, problems and whether a reload applied | unit; live `status` |
-| A player without `mayor.admin` gets nothing, `--json` or not | live "a player without mayor.admin gets no answer line" |
+| A player without `posse.admin` gets nothing, `--json` or not | live "a player without posse.admin gets no answer line" |
 | Without `--json`, the commands read as before | the existing live checks (`check explains a shared circle`, the reload checks), unchanged |
 
 Live suite: 67/67 on Paper 26.3 (2 skipped, as before). The test bots' two-letter names aren't valid Minecraft names, so the `--json` checks name them by UUID, which the format allows.
@@ -80,19 +80,19 @@ Each promise in the README, and the test that holds it to it. "Live" is `test/li
 | Private messages out of reach aren't sent; told who instead; selectors refused | live private-message matrix (every command), "/msg with a selector is refused" |
 | `/r` re-checked on reply | unit `replies`; live "Replies" |
 | `/me` and `/teammsg` off while circles are in use; bypass keeps them | unit `broadcastCommandsOffWhileCirclesAreOn`; live "Blocked and broadcast commands" |
-| BlueMapMini shares follow chat | live share section, with a stand-in BlueMapMini firing the share event; BlueMapMini's own guard keeps sharing off with a Mayor older than 0.5.0 |
+| BlueMapMini shares follow chat | live share section, with a stand-in BlueMapMini firing the share event; BlueMapMini's own guard keeps sharing off with a Posse older than 0.5.0 |
 | Blocked commands in every form, own message | unit `blockedCommandsInEveryForm`; live |
 | Filter: whole words, disguises, allow list; Scunthorpe passes | unit `wholeWordsOnly`, `seesThroughDisguises`, `allowListWins`, `phrases`, `defaultList*`; live |
 | **Blocked text is never logged or stored** | **new** live "filtered words never reach the server log" (chat and `/msg`) |
 | Filter bypass, granted and removed without a relog; others still filtered | unit `filterBypass*`; live |
-| `mayor.bypass` and `.filter.bypass` off for everyone, ops included | unit `bypassesAreOffForEveryoneOpsIncluded` |
+| `posse.bypass` and `.filter.bypass` off for everyone, ops included | unit `bypassesAreOffForEveryoneOpsIncluded` |
 | Nobody-heard notes: all before any repeat, cooldown | unit `everyNoteBeforeAnyRepeatAndNeverTwiceInARow`, `cooldown`, `emptyIsQuiet`; live |
 | Permission changes take effect without a relog | live "Circles granted and removed with LuckPerms, no relog" |
 | Broken config at startup pauses chat and messages; console says why | unit `pausedBlocksMessagesButNotOtherCommands`; live |
 | **Admins are told about a broken config when they join** | **new** live "an admin joining is told…", and "a player who isn't an admin isn't" |
 | A broken reload keeps the working rules | unit `brokenYamlIsAnErrorWithNoSettings`; live |
 | `/circles`, names only with permission | live `/circles` section |
-| `/mayor check` explains | live |
+| `/posse check` explains | live |
 | 20 players chatting at once stay quick | live "Load" (TPS, 95th percentile under 500 ms) |
 
 **Gaps added this audit:** the two in bold. Both passed on 26.2 and 26.3 (61/61, 2 real-client skips).
@@ -109,10 +109,10 @@ Each promise in the README, and the test that holds it to it. "Live" is `test/li
 
 ## 2026-11-24: join and leave lines under `presence: reach` (K682)
 
-A rehearsal bot run on another server saw no join or leave line at all, controls included, and asked whether Mayor drops them or the bots can't see them.
+A rehearsal bot run on another server saw no join or leave line at all, controls included, and asked whether Posse drops them or the bots can't see them.
 
-- **Result:** Mayor delivers them. On throwaway Paper 26.1.2, 26.2 and 26.3, with vanilla join messages on, every control (same circle, and everyone under `presence: everyone`) received the line, and the cross-circle case didn't. Each check reads mineflayer's text events and the raw chat packets, and the two agree. The console logged every line. So the missing lines in that run were the harness or that server's setup, not Mayor. Nothing was changed in Mayor's behavior.
+- **Result:** Posse delivers them. On throwaway Paper 26.1.2, 26.2 and 26.3, with vanilla join messages on, every control (same circle, and everyone under `presence: everyone`) received the line, and the cross-circle case didn't. Each check reads mineflayer's text events and the raw chat packets, and the two agree. The console logged every line. So the missing lines in that run were the harness or that server's setup, not Posse. Nothing was changed in Posse's behavior.
 - **Covered, added:** `PresenceMessagesTest` (same circle receives; other circle doesn't; the visitor in both circles is seen by everyone and sees everyone; the console always gets the line, even with nobody to send it to; the joiner isn't sent their own line; a null message, as with Essentials' custom join message set to none, sends nothing anywhere; `presence: everyone`; paused rules go to the console only). The listener now calls the same `PresenceMessages.deliver` the test runs. Live `presence-messages.js`: six made-up players (two kids, two adults, one in both circles, one with no circle) join and leave in turn in a circle-only default world, first under `presence: everyone` as a control, then `reach`.
-- **Skipped:** a plugin that sets a join message after Mayor at MONITOR priority, since Mayor can't see it and no setting could help. Bots on the 26.x native protocol, since the suite uses 1.21.11 through ViaVersion and ViaBackwards.
+- **Skipped:** a plugin that sets a join message after Posse at MONITOR priority, since Posse can't see it and no setting could help. Bots on the 26.x native protocol, since the suite uses 1.21.11 through ViaVersion and ViaBackwards.
 - **Known limit:** the joiner's own join line isn't sent to them, which vanilla would do. It can't leak anything; noted in case a client expects it.
 

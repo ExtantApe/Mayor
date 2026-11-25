@@ -55,10 +55,10 @@ async function round(label, wantFor) {
   await s.start();
   section('Setup: circles for made-up players');
   s.writeConfig('config.yml', CONFIG);
-  await s.run('mayor reload', /\[Mayor\] (Reloaded|The config)/, 10000);
+  await s.run('posse reload', /\[Posse\] (Reloaded|The config)/, 10000);
   // LuckPerms only knows a player after the first join, so everyone joins once, is given circles, and leaves.
   for (const n of ORDER) { bots[n] = new Bot(n, +port); await bots[n].spawned; await sleep(300); }
-  for (const [n, cs] of Object.entries(PEOPLE)) for (const c of cs) { await s.run(`lp user ${n} permission set mayor.circle.${c} true`, null); }
+  for (const [n, cs] of Object.entries(PEOPLE)) for (const c of cs) { await s.run(`lp user ${n} permission set posse.circle.${c} true`, null); }
   await sleep(1000);
   for (const n of ORDER) bots[n].quit();
   await sleep(2500);
@@ -70,7 +70,7 @@ async function round(label, wantFor) {
 
   section('presence: reach');
   s.writeConfig('config.yml', CONFIG + 'presence: reach\n');
-  check('reload applies presence: reach', /Reloaded/.test(((await s.run('mayor reload', /\[Mayor\] (Reloaded|The config)[^\n]*/, 10000)) || [''])[0]));
+  check('reload applies presence: reach', /Reloaded/.test(((await s.run('posse reload', /\[Posse\] (Reloaded|The config)[^\n]*/, 10000)) || [''])[0]));
   const m0 = s.mark();
   r = await round('reach', (v, n) => reaches(v, n));
   check('same circle and the visitor hear it; other circle and no circle do not (text and raw packets)', r.bad.length === 0 && r.total > 0, r.bad.slice(0, 8).join('; ') || `${r.total} joins seen`);

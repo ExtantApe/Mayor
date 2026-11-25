@@ -1,6 +1,6 @@
-rootProject.name = "Mayor"
+rootProject.name = "Posse"
 
-// A compile-only copy of BlueMapMini's share event, so Mayor builds without BlueMapMini. Never shipped.
+// A compile-only copy of BlueMapMini's share event, so Posse builds without BlueMapMini. Never shipped.
 include("bluemapmini-stub")
 project(":bluemapmini-stub").projectDir = file("test/stub")
 
