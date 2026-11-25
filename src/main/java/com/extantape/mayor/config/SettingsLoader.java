@@ -33,7 +33,7 @@ public final class SettingsLoader {
     private static final Pattern NAME = Pattern.compile("[a-z0-9_-]+");
     private static final Set<String> CONFIG_KEYS = Set.of("config-version", "circles", "circle-only-worlds",
             "world-groups", "dimension-suffixes", "private-message-commands", "reply-commands", "broadcast-commands",
-            "blocked-commands", "nobody-heard", "messages", "presence");
+            "blocked-commands", "nobody-heard", "messages", "presence", "home-worlds");
     private static final Set<String> FILTER_KEYS = Set.of("enabled", "check", "words", "allow", "mask-for-viewers");
 
     /** The result: settings to apply, or errors explaining why there are none. Warnings either way. */
@@ -150,13 +150,69 @@ public final class SettingsLoader {
         if (!presence.equals("everyone") && !presence.equals("reach")) errors.add(CONFIG + ": presence must be everyone or reach.");
         if (presence.equals("reach") && circles.isEmpty()) warnings.add(CONFIG + ": presence: reach has no effect until at least one circle is listed.");
 
+        com.extantape.mayor.rules.HomeWorlds homeWorlds = homeWorlds(base, circles);
+
         Reach reach = new Reach(circles, circleOnly, groupOf, suffixes);
         CommandRules commands = new CommandRules(reach, filter, filtered.messages(), filtered.maskForViewers(),
                 Set.copyOf(strings(CONFIG, base, "private-message-commands")), Set.copyOf(strings(CONFIG, base, "reply-commands")),
                 Set.copyOf(strings(CONFIG, base, "broadcast-commands")), blocked);
         if (!errors.isEmpty()) return new Result(null, List.copyOf(errors), List.copyOf(warnings));
-        return new Result(new Settings(reach, commands, filter, filtered, nobodyHeard, List.copyOf(quipList), Map.copyOf(messages), presence.equals("reach")),
+        return new Result(new Settings(reach, commands, filter, filtered, nobodyHeard, List.copyOf(quipList), Map.copyOf(messages), presence.equals("reach"), homeWorlds),
                 List.of(), List.copyOf(warnings));
+    }
+
+    /** The optional home-worlds section (D290). Every slip is an error: a half-read rule could leave a kid in the wrong world. */
+    private com.extantape.mayor.rules.HomeWorlds homeWorlds(YamlConfiguration base, List<String> circles) {
+        if (!base.contains("home-worlds") || base.get("home-worlds") == null) return com.extantape.mayor.rules.HomeWorlds.OFF;
+        ConfigurationSection section = base.getConfigurationSection("home-worlds");
+        if (section == null) {
+            errors.add(CONFIG + ": home-worlds must be a section, with one entry per circle and an optional no-circle entry.");
+            return com.extantape.mayor.rules.HomeWorlds.OFF;
+        }
+        Map<String, com.extantape.mayor.rules.HomeWorlds.Entry> byCircle = new LinkedHashMap<>();
+        com.extantape.mayor.rules.HomeWorlds.Entry noCircle = null;
+        for (String key : section.getKeys(false)) {
+            String where = "home-worlds." + key;
+            ConfigurationSection entry = section.getConfigurationSection(key);
+            if (entry == null) {
+                errors.add(CONFIG + ": " + where + " must be a section" + (key.equals("no-circle") ? " with a fallback." : " with worlds and a fallback."));
+                continue;
+            }
+            boolean none = key.equals("no-circle");
+            for (String sub : entry.getKeys(false)) {
+                if (!(sub.equals("fallback") || sub.equals("message") || (!none && sub.equals("worlds")))) {
+                    warnings.add(CONFIG + ": " + where + "." + sub + " isn't a setting Mayor uses, so it's ignored.");
+                }
+            }
+            String fallback = entry.isString("fallback") ? entry.getString("fallback").trim() : "";
+            if (fallback.isEmpty()) errors.add(CONFIG + ": " + where + ".fallback must be a world name.");
+            String message = null;
+            if (entry.contains("message")) {
+                if (entry.isString("message")) message = entry.getString("message");
+                else errors.add(CONFIG + ": " + where + ".message must be text.");
+            }
+            if (none) {
+                if (!fallback.isEmpty()) noCircle = new com.extantape.mayor.rules.HomeWorlds.Entry(Set.of(), fallback, message);
+                continue;
+            }
+            String circle = key.toLowerCase(Locale.ROOT);
+            if (!circles.contains(circle)) {
+                errors.add(CONFIG + ": " + where + " names a circle that isn't in circles.");
+                continue;
+            }
+            List<String> worlds = strings(CONFIG, entry, "worlds");
+            if (worlds.isEmpty()) errors.add(CONFIG + ": " + where + ".worlds must list at least one world.");
+            if (!fallback.isEmpty() && !worlds.isEmpty() && !worlds.contains(fallback)) {
+                errors.add(CONFIG + ": " + where + ".fallback must be one of its worlds.");
+            }
+            if (!fallback.isEmpty() && !worlds.isEmpty()) {
+                byCircle.put(circle, new com.extantape.mayor.rules.HomeWorlds.Entry(new LinkedHashSet<>(worlds), fallback, message));
+            }
+        }
+        if (circles.isEmpty() && !section.getKeys(false).isEmpty()) {
+            errors.add(CONFIG + ": home-worlds needs at least one circle in circles. With none, nobody is in a circle and everyone would be sent to the no-circle world.");
+        }
+        return new com.extantape.mayor.rules.HomeWorlds(byCircle, noCircle);
     }
 
     private String read(Path folder, String name) {

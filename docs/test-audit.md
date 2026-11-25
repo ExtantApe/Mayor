@@ -3,6 +3,22 @@
 Kept by this repo's owning session (Minecraft: Plugins Lead), per `~/Code/CLAUDE.md`, "Test self-audits". Newest first.
 
 
+## 2026-11-25: home worlds (0.9.0, after a feature)
+
+| Promise | Covered by |
+| --- | --- |
+| A kid in a kids' world stays; in the adults' world, the station or the main world, they're moved to the fallback | unit `HomeWorldsTest`; live, rejoin of K1 and K2 |
+| The visitor in both circles and an adult are never moved | unit; live, rejoin and a teleport into the kids' world |
+| A player with no circle waits in the station and is sent back | unit; live, rejoin, respawn and a teleport |
+| Respawn is checked at the respawn point | unit `theRespawnPointIsCheckedNotTheCurrentWorld`; live, four players die and respawn |
+| A teleport that slips past is undone after the world change | live, a kid teleported to the adults' world |
+| Fails closed: a missing fallback lands the player in the main world and says so | unit `aMissingFallbackFailsClosedToTheMainWorld`; live, status text and `--json`, the log warning |
+| Only the moved player is told | live, the other players' chat shows none of the lines |
+| Off unless configured | unit `offMovesNobody`, `homeWorldsAreOffByDefault`; live, section removed and nobody moves |
+| A bad section is an error, so nothing half-applies | unit `homeWorldsMistakesAreErrorsSoNothingHalfAppliesToKids` (seven mistakes) |
+
+Gaps skipped: the first tick between joining and the move (a teleport inside the join event can't be watched by a bot). Not covered and said so: home worlds while chat is paused for an unreadable config; Multiverse and Essentials were not installed in the live run, so the real interplay with them is untested.
+
 ## 2026-11-24: presence (0.8.0, after a feature)
 
 | Promise | Covered by |

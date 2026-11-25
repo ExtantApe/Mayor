@@ -69,6 +69,7 @@ public final class MayorPlugin extends JavaPlugin implements ReachService {
         plugins.registerEvents(new CommandListener(this), this);
         plugins.registerEvents(new TextListener(this), this);
         plugins.registerEvents(new PlayerListener(this), this);
+        plugins.registerEvents(new com.extantape.mayor.listen.HomeWorldsListener(this), this);
         presence = new com.extantape.mayor.listen.PresenceListener(this);
         plugins.registerEvents(presence, this);
         Bukkit.getScheduler().runTaskTimer(this, presence::refresh, 40L, 40L);
@@ -114,6 +115,10 @@ public final class MayorPlugin extends JavaPlugin implements ReachService {
         if (presence != null) presence.refresh();
         rememberOnline();
         Reach reach = settings.reach();
+        if (settings.homeWorlds().enabled()) {
+            // Other plugins may load their worlds after this one, so look again once the server is up.
+            Bukkit.getScheduler().runTask(this, this::logHomeWorldProblems);
+        }
         getLogger().info(reach.active()
                 ? "Chat rules are on, with " + reach.circles().size() + (reach.circles().size() == 1 ? " circle. " : " circles. ") + settings.filterSummary()
                 : "No circles are set up, so chat reaches everyone, as in vanilla. " + settings.filterSummary());
@@ -166,8 +171,33 @@ public final class MayorPlugin extends JavaPlugin implements ReachService {
         return fallback;
     }
 
+    /** Config problems, plus any world named in home-worlds that isn't loaded right now. */
     public List<String> problems() {
-        return problems;
+        List<String> missing = homeWorldProblems();
+        if (missing.isEmpty()) return problems;
+        List<String> all = new java.util.ArrayList<>(problems);
+        all.addAll(missing);
+        return List.copyOf(all);
+    }
+
+    /** One line for each world named in home-worlds that doesn't exist. Empty when it's off or all are there. */
+    public List<String> homeWorldProblems() {
+        State s = state;
+        if (s == null || !s.settings().homeWorlds().enabled()) return List.of();
+        var home = s.settings().homeWorlds();
+        List<String> out = new java.util.ArrayList<>();
+        for (String world : home.namedWorlds()) {
+            if (Bukkit.getWorld(world) != null) continue;
+            boolean fallback = home.noCircle() != null && home.noCircle().fallback().equals(world)
+                    || home.byCircle().values().stream().anyMatch(e -> e.fallback().equals(world));
+            out.add("home-worlds: the world \"" + world + "\" doesn't exist"
+                    + (fallback ? ", so players who need it land at the main world's spawn instead." : "."));
+        }
+        return out;
+    }
+
+    private void logHomeWorldProblems() {
+        for (String p : homeWorldProblems()) getLogger().warning(p);
     }
 
     public Map<UUID, UUID> partners() {

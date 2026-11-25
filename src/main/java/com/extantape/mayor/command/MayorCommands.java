@@ -1,6 +1,7 @@
 package com.extantape.mayor.command;
 
 import com.extantape.mayor.MayorPlugin;
+import com.extantape.mayor.rules.HomeWorlds;
 import com.extantape.mayor.rules.Reach;
 import com.extantape.mayor.rules.Subject;
 import com.extantape.mayor.rules.WordFilter;
@@ -115,8 +116,9 @@ public final class MayorCommands {
 
         @Override public Console.Status status() {
             MayorPlugin.State state = plugin.state();
-            if (state == null) return new Console.Status(true, List.of(), false, plugin.problems());
-            return new Console.Status(false, state.settings().reach().circles(), !state.settings().filter().isEmpty(), plugin.problems());
+            if (state == null) return new Console.Status(true, List.of(), false, plugin.problems(), homeWorldsStatus(null));
+            return new Console.Status(false, state.settings().reach().circles(), !state.settings().filter().isEmpty(), plugin.problems(),
+                    homeWorldsStatus(state.settings().homeWorlds()));
         }
 
         @Override public Console.Reloaded reload() {
@@ -136,6 +138,25 @@ public final class MayorCommands {
 
         private Console.Who who(Player p) { return new Console.Who(p.getName(), p.getUniqueId().toString()); }
     };
+
+    /** The home-worlds part of status, for the --json answer. */
+    static Map<String, Object> homeWorldsStatus(HomeWorlds home) {
+        Map<String, Object> m = new java.util.LinkedHashMap<>();
+        boolean on = home != null && home.enabled();
+        m.put("enabled", on);
+        m.put("circles", on ? List.copyOf(home.byCircle().keySet()) : List.of());
+        m.put("noCircle", on && home.noCircle() != null);
+        return m;
+    }
+
+    /** The home-worlds part of status, in a sentence. */
+    static String homeWorldsSummary(HomeWorlds home) {
+        if (home == null || !home.enabled()) return "off";
+        List<String> parts = new ArrayList<>();
+        home.byCircle().forEach((circle, e) -> parts.add(circle + " stays in " + e.worlds().size() + (e.worlds().size() == 1 ? " world" : " worlds") + ", else " + e.fallback()));
+        if (home.noCircle() != null) parts.add("no circle waits in " + home.noCircle().fallback());
+        return String.join("; ", parts);
+    }
 
     private int circles(Player player) {
         MayorPlugin.State state = plugin.state();
@@ -190,6 +211,7 @@ public final class MayorCommands {
             plugin.tell(sender, "admin-status", Map.of(
                     "circles", reach.circles().isEmpty() ? "none (vanilla chat)" : String.join(", ", reach.circles()),
                     "filter", state.settings().filter().isEmpty() ? "off" : "on"));
+            plugin.tell(sender, "admin-home-worlds", Map.of("summary", homeWorldsSummary(state.settings().homeWorlds())));
         }
         for (String problem : plugin.problems()) plugin.tell(sender, "admin-problem", Map.of("problem", problem));
         return Command.SINGLE_SUCCESS;

@@ -20,6 +20,7 @@ import java.util.Locale;
  * Test only. One console command, /mt:
  *   mt world <name>          makes a small flat world (a name ending in _nether or _the_end gets that environment)
  *   mt tp <player> <world>   moves a player to a world's spawn
+ *   mt where <player>        prints "HRT where <player> <world>"
  *   mt tps                   prints "HRT tps <1m> mspt <avg>"
  *   mt worlds                prints "HRT worlds <name,name,...>"
  *   mt give <player> <item>  puts one item in the player's main hand
@@ -84,6 +85,12 @@ public final class LiveTestHelper extends JavaPlugin implements Listener {
                             }, 5L);
                             return 1;
                         }))))
+                .then(Commands.literal("where").then(Commands.argument("player", StringArgumentType.word()).executes(ctx -> {
+                    String name = StringArgumentType.getString(ctx, "player");
+                    Player p = Bukkit.getPlayerExact(name);
+                    getLogger().info("HRT where " + name + " " + (p == null ? "OFFLINE" : p.getWorld().getName()));
+                    return 1;
+                })))
                 .then(Commands.literal("worlds").executes(ctx -> {
                     getLogger().info("HRT worlds " + String.join(",", Bukkit.getWorlds().stream().map(World::getName).toList()));
                     return 1;
