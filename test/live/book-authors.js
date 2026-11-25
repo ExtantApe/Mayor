@@ -1,6 +1,6 @@
 // Book authors follow circles (D291) on one throwaway server. See README.md in this folder.
 // Usage: node book-authors.js <dir> <jar> <port>, relative to the work folder.
-// Run it with MAYOR_SUITE=book-authors.js MAYOR_PORT=<port> test/live/run.sh <version>.
+// Run it with POSSE_SUITE=book-authors.js POSSE_PORT=<port> test/live/run.sh <version>.
 // All names are made up. The bots only stand in for players: what each one "sees" is read from the server's own copy
 // of the book, which is exactly what the client is sent. Item frames and lecterns aren't driven here (see the README).
 const { sleep, check, section, summary, Server, Bot } = require('./lib.js');
@@ -16,7 +16,7 @@ async function books(n) {
   return m ? m[1].trim() : null;
 }
 async function give(n, author, title) { await s.run(`mt clear ${n}`, new RegExp(`HRT clear ${n}`), 5000); await s.run(`mt book ${n} ${author} ${title}`, new RegExp(`HRT book ${n}`), 5000); }
-async function reload() { return s.run('mayor reload', /\[Mayor\] (Reloaded|The config has problems, so nothing changed|The config still has problems)[^\n]*/, 10000); }
+async function reload() { return s.run('posse reload', /\[Posse\] (Reloaded|The config has problems, so nothing changed|The config still has problems)[^\n]*/, 10000); }
 /** Waits for the sweep (every 2 seconds), then reads what the player is carrying. */
 async function carried(n, want, ms = 6000) {
   const end = Date.now() + ms; let got = null;
@@ -31,7 +31,7 @@ async function carried(n, want, ms = 6000) {
 
   section('Setup: five made-up players and two circles');
   for (const n of Object.keys(PEOPLE)) { bots[n] = new Bot(n, +port); await bots[n].spawned; await sleep(1200); }
-  for (const [n, circles] of Object.entries(PEOPLE)) for (const c of circles) await s.run(`lp user ${n} permission set mayor.circle.${c} true`, null);
+  for (const [n, circles] of Object.entries(PEOPLE)) for (const c of circles) await s.run(`lp user ${n} permission set posse.circle.${c} true`, null);
   s.writeConfig('config.yml', CONFIG);
   await reload();
   await sleep(1500);
@@ -85,9 +85,9 @@ async function carried(n, want, ms = 6000) {
   section('Nothing is lost: the true author comes back when a circle is granted, and goes again when it is taken away');
   await give('A1', 'K1', 'Lasting');
   check('before: an adult sees Unknown', (await carried('A1', 'Unknown/Lasting')) === 'Unknown/Lasting', await books('A1'));
-  await s.run('lp user A1 permission set mayor.circle.kids true', null);
+  await s.run('lp user A1 permission set posse.circle.kids true', null);
   check('granted the kids circle, the same book shows its true author', (await carried('A1', 'K1/Lasting')) === 'K1/Lasting', await books('A1'));
-  await s.run('lp user A1 permission unset mayor.circle.kids', null);
+  await s.run('lp user A1 permission unset posse.circle.kids', null);
   check('with the circle taken away it is hidden again', (await carried('A1', 'Unknown/Lasting')) === 'Unknown/Lasting', await books('A1'));
 
   section('Settings: hide off shows everything, and a custom word is used');

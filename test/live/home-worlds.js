@@ -1,6 +1,6 @@
 // Home worlds (D290) on one throwaway server: a rejoin and a respawn, plus the world-change safety net and a missing
 // fallback. See README.md in this folder. Usage: node home-worlds.js <dir> <jar> <port>, relative to the work folder.
-// All names are made up. Run it with MAYOR_SUITE=home-worlds.js test/live/run.sh <version>.
+// All names are made up. Run it with POSSE_SUITE=home-worlds.js test/live/run.sh <version>.
 const { sleep, check, section, summary, Server, Bot } = require('./lib.js');
 const [dir, jar, port] = process.argv.slice(2);
 
@@ -34,7 +34,7 @@ async function waitWhere(n, want, ms = 8000) {
   return w;
 }
 async function join(n) { bots[n] = new Bot(n, +port); await bots[n].spawned; await sleep(1500); }
-async function reload() { return s.run('mayor reload', /\[Mayor\] (Reloaded|The config has problems, so nothing changed|The config still has problems)[^\n]*/, 10000); }
+async function reload() { return s.run('posse reload', /\[Posse\] (Reloaded|The config has problems, so nothing changed|The config still has problems)[^\n]*/, 10000); }
 const text = (n, re, from = 0) => bots[n].heard(re, from);
 
 (async () => {
@@ -44,7 +44,7 @@ const text = (n, re, from = 0) => bots[n].heard(re, from);
   section('Setup: made-up worlds, circles, and where everyone last was');
   for (const w of ['kidland', 'kidland_nether', 'grownups', 'station']) await s.run(`mt world ${w}`, new RegExp(`HRT world (${w}|FAILED)`), 60000);
   for (const n of NAMES) await join(n);
-  for (const [n, p] of Object.entries(PEOPLE)) for (const c of p.circles) await s.run(`lp user ${n} permission set mayor.circle.${c} true`, null);
+  for (const [n, p] of Object.entries(PEOPLE)) for (const c of p.circles) await s.run(`lp user ${n} permission set posse.circle.${c} true`, null);
   await sleep(1000);
   for (const [n, p] of Object.entries(PEOPLE)) await s.run(`mt tp ${n} ${p.last}`, new RegExp(`HRT tp ${n} ${p.last} true`), 10000);
   await sleep(1500);
@@ -52,8 +52,8 @@ const text = (n, re, from = 0) => bots[n].heard(re, from);
   await sleep(3000);
   s.writeConfig('config.yml', CONFIG);
   check('reload applies home-worlds', /Reloaded/.test((await reload() || [''])[0]));
-  const status = await s.run('mayor status', /Home worlds: ([^\n]*)/, 5000);
-  check('mayor status reports home-worlds', status && /kids stays in 2 worlds, else kidland/.test(status[1]) && /no circle waits in station/.test(status[1]), status && status[1]);
+  const status = await s.run('posse status', /Home worlds: ([^\n]*)/, 5000);
+  check('posse status reports home-worlds', status && /kids stays in 2 worlds, else kidland/.test(status[1]) && /no circle waits in station/.test(status[1]), status && status[1]);
   const m0 = s.mark();
 
   section('Rejoin: everyone comes back where they left, kids kept to kids\' worlds');
@@ -100,9 +100,9 @@ const text = (n, re, from = 0) => bots[n].heard(re, from);
   s.writeConfig('config.yml', CONFIG.replace('kidland_nether]\n    fallback: kidland', 'kidland_nether, ghostland]\n    fallback: ghostland'));
   await reload();
   const sm = s.mark();
-  const st = await s.run('mayor status', /the world "ghostland" doesn't exist[^\n]*/, 5000);
-  check('mayor status says which world is missing', !!st, st && st[0]);
-  const json = await s.run('mayor status --json hw1', /ea-result[^\n]*hw1[^\n]*/, 5000);
+  const st = await s.run('posse status', /the world "ghostland" doesn't exist[^\n]*/, 5000);
+  check('posse status says which world is missing', !!st, st && st[0]);
+  const json = await s.run('posse status --json hw1', /ea-result[^\n]*hw1[^\n]*/, 5000);
   check('the --json status reports home-worlds on and the problem', json && /"homeWorlds":\{/.test(json[0]) && /"enabled":true/.test(json[0]) && /"circles":\["kids"\]/.test(json[0]) && /"noCircle":true/.test(json[0]) && /ghostland/.test(json[0]), json && json[0].slice(0, 300));
   await s.run('mt tp K1 grownups', /HRT tp K1 grownups true/, 8000);
   check('a kid sent out lands in the main world, never left where they were', (await waitWhere('K1', 'world')) === 'world', await where('K1'));
@@ -117,7 +117,7 @@ const text = (n, re, from = 0) => bots[n].heard(re, from);
   await s.run('mt tp X1 grownups', /HRT tp X1 grownups true/, 8000);
   await sleep(3000);
   check('a player with no circle stays where they are', (await where('X1')) === 'grownups', await where('X1'));
-  const off = await s.run('mayor status', /Home worlds: ([^\n]*)/, 5000);
+  const off = await s.run('posse status', /Home worlds: ([^\n]*)/, 5000);
   check('status says off', off && off[1] === 'off.', off && off[1]);
 
   const errors = s.errors(m0).filter((l) => !/ghostland|home-worlds fallback/.test(l));

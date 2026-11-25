@@ -28,5 +28,5 @@ jobs:
       - run: ./gradlew build
       - uses: actions/upload-artifact@v4
         with:
-          name: Mayor
-          path: build/libs/Mayor-*.jar
+          name: Posse
+          path: build/libs/Posse-*.jar

@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "com.extantape"
-version = "0.10.0"
+version = "0.11.0"
 
 java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(25))
@@ -56,10 +56,10 @@ tasks.test {
 // Signalbox goes inside the jar, relocated, so it can never clash with another plugin's copy. The shaded jar is the
 // only jar built.
 tasks.shadowJar {
-    archiveBaseName.set("Mayor")
+    archiveBaseName.set("Posse")
     archiveClassifier.set("")
     from("LICENSE")
-    relocate("com.extantape.signalbox", "com.extantape.mayor.libs.signalbox")
+    relocate("com.extantape.signalbox", "com.extantape.posse.libs.signalbox")
 }
 tasks.jar { enabled = false }
 tasks.assemble { dependsOn(tasks.shadowJar) }

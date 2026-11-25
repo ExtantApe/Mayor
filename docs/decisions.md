@@ -29,3 +29,13 @@ Owner decisions for HouseRules, newest first.
 
 - **Home worlds (owner, D290, building on D283 and D288):** everyone rejoins wherever they logged out. On a server with kids' groups, a kid can't end up outside the kids' worlds: they rejoin where they logged out if that's a kids' world, and otherwise in their fallback. Someone in no group waits in the circle-only station. Multiverse checks world access on teleport, not on join, and Essentials' spawn-on-join is all-or-nothing, so Mayor guards it, since it already knows circles. Built as the optional `home-worlds` section, 0.9.0. A player in any circle without an entry is never moved, which exempts the visitor in both circles. A missing fallback falls back to the main world's spawn, never to staying put.
 - **Book authors follow circles (owner, D291):** "How about it respects circles? So just like specific adult circles dont cross over to kids, their things like that shouldnt either"; then, to the playback: "Yes, record it (Recommended)" (Head of Games chat, 2026-11-24, on the quest journal showing its owner as author). Anything that carries a player's name follows Mayor's circles the same way chat does. A player sees the name only if they share a circle with that person; otherwise they see no name. Mayor already filters sign text and anvil renames; it gains a book-author filter, 0.10.0. Mechanism: the book item is swapped as it moves, with the true author kept in its own data, since Paper has no per-viewer item API and a packet library would be a new dependency. Choices made in the build: same world doesn't count (circles only, unlike chat); bypass on either side counts; an author Mayor has never seen is hidden; a name that matches no player is left alone; on by default, with nothing hidden when no circles are set up.
+
+## 2026-11-24 (rename)
+
+- **Posse (owner, D292, K736):** Mayor is renamed Posse, after a name check found Posse free on Modrinth, SpigotMC, Hangar and GitHub. Released as 0.11.0 so the version line continues. D196 applies: no old name, command, permission, folder or package is kept, and installs rename the folder and permission nodes before first start. Entries above this one keep saying Mayor, because they record what was decided then.
+
+## 2026-11-25: Rename safety, checklist and no old keys
+
+After the Trust and Safety review of the rename, the owner chose:
+- **No folder guard in code** ("No one else uses this yet"). Instead, the live checklist checks `/posse status` and `/posse check` with players kept out.
+- **No reading of old `mayor:` book keys** ("Get rid of mayor yes"). No server ran 0.10.0, so no book loses its author.

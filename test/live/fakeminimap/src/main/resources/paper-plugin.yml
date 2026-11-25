@@ -1,6 +1,6 @@
 # Test only. A stand-in for BlueMapMini that fires its share event.
-# Named BlueMapMini so Mayor finds it exactly as it would find the real plugin. Never install on a real server.
+# Named BlueMapMini so Posse finds it exactly as it would find the real plugin. Never install on a real server.
 name: BlueMapMini
 version: '0.0.0-test'
-main: com.extantape.mayor.livetest.fakeminimap.FakeMinimap
+main: com.extantape.posse.livetest.fakeminimap.FakeMinimap
 api-version: '26.1'

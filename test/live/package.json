@@ -1,7 +1,7 @@
 {
-  "name": "mayor-live-tests",
+  "name": "posse-live-tests",
   "private": true,
-  "description": "Live tests for Mayor: throwaway Paper servers driven by protocol bots.",
+  "description": "Live tests for Posse: throwaway Paper servers driven by protocol bots.",
   "license": "MIT",
   "type": "commonjs",
   "engines": {

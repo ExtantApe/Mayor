@@ -1,4 +1,4 @@
-# Mayor word filter. After editing, run /mayor reload.
+# Posse word filter. After editing, run /posse reload.
 #
 # How words match:
 # - Whole words only, so "class", "assume" and "Scunthorpe" are fine.
@@ -13,7 +13,7 @@
 # This list is a starting point. Change it to suit your players.
 enabled: true
 
-# Where adults and kids play together: players with mayor.filter.bypass write freely, and everyone without it
+# Where adults and kids play together: players with posse.filter.bypass write freely, and everyone without it
 # sees their blocked words as ****, in chat and private messages. Signs, books and item names are saved masked
 # for everyone. A player without the bypass counts as filtered.
 mask-for-viewers: false
