@@ -21,7 +21,8 @@ final class Console {
 
     static final String ADMIN = "mayor.admin";
 
-    record Status(boolean paused, List<String> circles, boolean filter, List<String> problems) {}
+    /** {@code homeWorlds} is {@code enabled} plus the circles with an entry and whether there is a no-circle entry. */
+    record Status(boolean paused, List<String> circles, boolean filter, List<String> problems, Map<String, Object> homeWorlds) {}
     record Reloaded(boolean applied, boolean paused, List<String> problems) {}
     record Who(String name, String uuid) {}
     /** {@code why} is Reach.Why in lowercase with hyphens; {@code reason} is the same in plain words. */
@@ -79,6 +80,7 @@ final class Console {
         m.put("circles", s.circles());
         m.put("filter", s.filter());
         m.put("problems", s.problems());
+        m.put("homeWorlds", s.homeWorlds());
         return Answer.ok(id, m);
     }
 

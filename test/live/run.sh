@@ -2,7 +2,7 @@
 # Builds one throwaway Paper server on 127.0.0.1, runs the Mayor acceptance tests, and deletes it, even when
 # a test fails. See README.md in this folder.
 # Usage: MAYOR_ACCEPT_EULA=1 test/live/run.sh <paper version>
-# MAYOR_SUITE=presence-messages.js runs only the join and leave message check (default suite.js).
+# MAYOR_SUITE=presence-messages.js runs only the join and leave message check; home-worlds.js runs the home-worlds check (default suite.js).
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 REPO=$(cd "$HERE/../.." && pwd)

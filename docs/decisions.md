@@ -24,3 +24,7 @@ Owner decisions for HouseRules, newest first.
 ## 2026-11-24
 
 - **Who's online (owner, D283):** before kids are let into the second server, players who share no circle don't see each other in the player list or join messages there. The owner chose "Circles like [the main server] (Recommended)" after a safety review found adults could see and chat with kids at a shared station. Built as `presence: reach`, off by default so other servers keep vanilla behavior. It fails closed when the config can't be read.
+
+## 2026-11-25
+
+- **Home worlds (owner, D290, building on D283 and D288):** everyone rejoins wherever they logged out. On a server with kids' groups, a kid can't end up outside the kids' worlds: they rejoin where they logged out if that's a kids' world, and otherwise in their fallback. Someone in no group waits in the circle-only station. Multiverse checks world access on teleport, not on join, and Essentials' spawn-on-join is all-or-nothing, so Mayor guards it, since it already knows circles. Built as the optional `home-worlds` section, 0.9.0. A player in any circle without an entry is never moved, which exempts the visitor in both circles. A missing fallback falls back to the main world's spawn, never to staying put.

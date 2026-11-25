@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -19,7 +20,7 @@ class ConsoleTest {
 
     final Console.Host host = new Console.Host() {
         @Override public String version() { return "0.3.0"; }
-        @Override public Console.Status status() { return new Console.Status(paused, paused ? List.of() : List.of("red", "blue"), true, List.of()); }
+        @Override public Console.Status status() { return new Console.Status(paused, paused ? List.of() : List.of("red", "blue"), true, List.of(), Map.of("enabled", false, "circles", List.of(), "noCircle", false)); }
         @Override public Console.Reloaded reload() { asked.add("reload"); return new Console.Reloaded(true, false, List.of("a warning")); }
         @Override public Console.Checked check(String from, String to) { asked.add(from + ">" + to); return checked; }
     };
@@ -38,6 +39,7 @@ class ConsoleTest {
         String a = ask("status --json s1");
         assertTrue(a.contains("\"ok\":true") && a.contains("\"paused\":false") && a.contains("\"circles\":[\"red\",\"blue\"]") && a.contains("\"filter\":true"), a);
         assertEquals(a, ask("--json s1"), "no subcommand means status");
+        assertTrue(a.contains("\"homeWorlds\":{") && a.contains("\"enabled\":false"), "status reports home-worlds: " + a);
     }
 
     @Test void reloadAppliesAndListsWhatItFound() throws Exception {

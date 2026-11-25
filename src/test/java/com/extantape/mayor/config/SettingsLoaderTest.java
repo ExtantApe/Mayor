@@ -109,4 +109,43 @@ class SettingsLoaderTest {
         assertTrue(r.ok(), r.errors().toString());
         assertTrue(r.warnings().toString().contains("presence: reach has no effect"), r.warnings().toString());
     }
+
+    private static final String HOME = """
+            circles: [kids, adults]
+            home-worlds:
+              kids: { worlds: [kidland, kidland_nether], fallback: kidland, message: "Hi" }
+              no-circle: { fallback: station }
+            """;
+
+    @Test
+    void homeWorldsAreOffByDefault() {
+        SettingsLoader.Result r = load(null, null, null);
+        assertFalse(r.settings().homeWorlds().enabled());
+        assertTrue(r.warnings().isEmpty(), r.warnings().toString());
+    }
+
+    @Test
+    void homeWorldsAreRead() {
+        SettingsLoader.Result r = load(HOME, null, null);
+        assertTrue(r.ok(), r.errors().toString());
+        var home = r.settings().homeWorlds();
+        assertTrue(home.enabled());
+        assertEquals("kidland", home.byCircle().get("kids").fallback());
+        assertEquals("Hi", home.byCircle().get("kids").message());
+        assertEquals("station", home.noCircle().fallback());
+    }
+
+    @Test
+    void homeWorldsMistakesAreErrorsSoNothingHalfAppliesToKids() {
+        for (String bad : java.util.List.of(
+                "circles: [kids]\nhome-worlds:\n  kids: { worlds: [a], fallback: b }\n",
+                "circles: [kids]\nhome-worlds:\n  kids: { worlds: [a] }\n",
+                "circles: [kids]\nhome-worlds:\n  kids: { fallback: a }\n",
+                "circles: [kids]\nhome-worlds:\n  grown: { worlds: [a], fallback: a }\n",
+                "circles: [kids]\nhome-worlds:\n  no-circle: {}\n",
+                "circles: [kids]\nhome-worlds: [a]\n",
+                "home-worlds:\n  no-circle: { fallback: station }\n")) {
+            assertFalse(load(bad, null, null).ok(), bad);
+        }
+    }
 }

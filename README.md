@@ -2,7 +2,7 @@
 
 Chat rules for family and community Paper servers. Players hear people in the same world, plus anyone who shares a "circle" with them, so groups such as families or age groups keep their own conversations across every world.
 
-**Status:** pre-release. It passes its acceptance tests on throwaway Paper 26.2 and 26.3 servers, using protocol bots with LuckPerms: chat and private messages for every pair of players, who sees whom in the player list and join messages (`presence: reach`), replies, blocked commands, the word filter and its bypass, masking adults' words for kids, books, `/circles`, reloads, a broken config, and 20 bots chatting at once. BlueMapMini's share was tested with a stand-in plugin here; the real BlueMapMini 0.3.0 and Mayor 0.5.0 haven't been run together yet. Signs and anvil renames weren't tested. It hasn't been seen in a real game client yet, so the wording and colours haven't been checked by a person. See [the live tests](test/live/README.md) and the [test audit](docs/test-audit.md).
+**Status:** pre-release. It passes its acceptance tests on throwaway Paper 26.2 and 26.3 servers, using protocol bots with LuckPerms: chat and private messages for every pair of players, who sees whom in the player list and join messages (`presence: reach`), home worlds on rejoin, respawn and teleport, replies, blocked commands, the word filter and its bypass, masking adults' words for kids, books, `/circles`, reloads, a broken config, and 20 bots chatting at once. BlueMapMini's share was tested with a stand-in plugin here; the real BlueMapMini 0.3.0 and Mayor 0.5.0 haven't been run together yet. Signs and anvil renames weren't tested. It hasn't been seen in a real game client yet, so the wording and colours haven't been checked by a person. See [the live tests](test/live/README.md) and the [test audit](docs/test-audit.md).
 
 - Requires Paper 26.1 or newer and Java 25. Paper 1.21.11 and older aren't supported.
 - With no circles set up it changes nothing about who hears whom, so it's safe to install first and configure after.
@@ -27,6 +27,16 @@ Otherwise they can't. A world group is a world with its Nether and End (`surviva
 - BlueMapMini's `/hud share`, if BlueMapMini is installed, goes only to players who could hear you in chat. BlueMapMini keeps sharing off until Mayor is 0.5.0 or newer.
 
 **Who's online (optional).** With `presence: reach` in `config.yml`, the player list (Tab) and join and leave messages follow the same rule: you only see players you could chat with. A kid and an adult who share no circle don't see each other online. It's checked on join, leave and world change, and every two seconds for circle changes, so no relog is needed. If the config can't be read at startup, nobody is shown to anyone until it's fixed. The default, `presence: everyone`, leaves both as in vanilla. Death and advancement messages and a player's name above their head aren't covered.
+
+**Home worlds (optional).** For a server where a kids' group must never end up in an adults' world. Players rejoin where they logged out, and a world plugin often checks access only when you teleport, not when you join. With a `home-worlds` section in `config.yml`, Mayor steps in when someone is in a world their circle doesn't allow:
+
+- A circle with an entry lists its worlds and a fallback. A player there who is somewhere else is moved to the fallback's spawn, on join, on respawn, and after any world change. A kid who logged out in a kids' world stays where they were.
+- A player in any circle with no entry is never moved. That covers adult groups and a visitor who is in both a kids' and an adults' circle.
+- A player in no circle goes to the `no-circle` fallback, such as a circle-only station, and is sent back if they leave it.
+- A fallback world that doesn't exist fails closed: the player goes to the main world's spawn, the log warns, and `/mayor status` names the missing world. They are never left where they were.
+- Only the moved player gets a short line, such as "Welcome back! You're in the kids' world." (set per entry with `message`). Nobody else is told.
+
+It is off unless the section is there, and it needs at least one circle. A mistake in the section is a config error, so nothing half-applies. Not covered: the first tick before the move, and a world that Mayor can't see because another plugin loads it after the player joins. While chat is paused because the config couldn't be read at startup, home worlds are paused too, because Mayor can't tell who is in which circle.
 
 **Blocked commands.** Any command can be turned off, each with its own message. `sort` also blocks `anyplugin:sort`, in any letter case.
 

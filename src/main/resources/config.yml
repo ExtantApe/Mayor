@@ -21,6 +21,26 @@ circle-only-worlds: []
 #     each other online. If the config can't be read at startup, nobody is shown to anyone until it's fixed.
 presence: everyone
 
+# Keeps players in the worlds their circles belong in, for a server where a kids' group must never end up in an
+# adults' world. Off unless this section is here. Players rejoin where they logged out, so this only steps in when
+# that world isn't allowed: on join, on respawn, and after any world change (in case a teleport got past your
+# world plugin). Needs at least one circle.
+#   - An entry per circle: the worlds its players may be in, and the world they're sent to otherwise (one of those
+#     worlds). A player in any circle with no entry is never moved, so a visitor in both a kids' and an adults'
+#     circle is left alone.
+#   - no-circle: where players in no circle at all wait. Pair it with circle-only-worlds for a circle-only station.
+#   - message (optional): the line the moved player gets, in MiniMessage. <world> is the world they're sent to.
+# If a fallback world doesn't exist, the player goes to the main world's spawn, /mayor status says so, and the log
+# warns. A player is never left where they were. Nothing goes to other players.
+#   home-worlds:
+#     kids:
+#       worlds: [kids_world, kids_world_nether, kids_world_the_end]
+#       fallback: kids_world
+#       message: "<gray>Welcome back! You're in the kids' world."
+#     no-circle:
+#       fallback: station
+home-worlds: {}
+
 # Worlds that count as one for chat. A world not listed here joins the world it's named after when its name ends
 # with one of the dimension-suffixes below, so "survival_nether" goes with "survival".
 #   world-groups:
@@ -86,6 +106,8 @@ messages:
   filtered-sign: "<gray>That sign has a word we don't use here, so it wasn't saved. Try different words!"
   filtered-book: "<gray>That book has a word we don't use here, so your changes weren't saved. Try different words!"
   filtered-item-name: "<gray>That name has a word we don't use here. Try a different one!"
+  home-moved: "<gray>Welcome back! You're in <white><world></white>."
+  home-waiting: "<gray>Welcome! You can wait here until an admin adds you to a group."
   circles-off: "<gray>Everyone on the server can hear you."
   circles-none: "<gray>You're not in any circles, so only people in the same world can hear you."
   circles-yours: "<gray>Your circles: <white><circles></white>"
@@ -99,5 +121,6 @@ messages:
   admin-reload-failed-paused: "<gray>[Mayor] The config still has problems, so chat stays paused."
   admin-problem: "<gray>  - <problem>"
   admin-status: "<gray>[Mayor] Circles: <white><circles></white>. Word filter: <white><filter></white>."
+  admin-home-worlds: "<gray>[Mayor] Home worlds: <white><summary></white>."
   admin-check-yes: "<white><from></white><gray> can reach <white><to></white><gray>: <reason>."
   admin-check-no: "<white><from></white><gray> can't reach <white><to></white><gray>: <reason>."

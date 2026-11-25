@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.0
+
+- **Home worlds, optionally** (D290). A `home-worlds` section in `config.yml` keeps players in the worlds their circles belong in. Players rejoin where they logged out; if that world isn't allowed for their circle, they're moved to the circle's fallback world. Checked on join, on respawn, and after any world change, in case a teleport slips past the world plugin. A player in any circle without an entry (a visitor in both kids' and adults' circles, an adult) is never moved. A player in no circle goes to the `no-circle` fallback, such as a circle-only station. Only the moved player gets a short, friendly line. Off unless the section is there.
+- Fails closed. If a fallback world doesn't exist, the player goes to the main world's spawn and the log warns. `/mayor status` (and its `--json` form, now with a `homeWorlds` part) names any missing world. A mistake in the section, such as a fallback that isn't one of the circle's worlds or a circle that isn't listed, is a config error.
+- Not covered: the moment between joining and the move, and home worlds while chat is paused for an unreadable config.
+- Tested: unit tests for a kid in a kids' world, in the adults' world, the station and the main world, the visitor, an adult, no circle, a missing fallback, and the feature off; config loading for the default, a good section and seven kinds of mistake. Bots on throwaway Paper 26.1.2, 26.2 and 26.3 (30/30 each) checked a rejoin and a respawn for five made-up players, the safety net after a teleport, a missing fallback, and the feature switched off. The existing suite still passes on 26.3 (84/84, 3 skipped). Not yet seen in a real game client, and not run with Multiverse or Essentials.
+
 ## 0.8.0
 
 - **Who's online follows the rules, optionally** (D283). With `presence: reach` in `config.yml`, the player list (Tab) and join and leave messages show a player only to people they could chat with. A kid and an adult who share no circle don't see each other online, including in a circle-only lobby. Checked on join, leave and world change, and every two seconds for circle changes, so no relog is needed. If the config can't be read at startup, nobody is shown to anyone until it's fixed. The default, `presence: everyone`, changes nothing. A typo in `presence` is a config error.
