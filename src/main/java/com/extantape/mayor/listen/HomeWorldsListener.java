@@ -62,7 +62,11 @@ public final class HomeWorldsListener implements Listener {
         if (move == null) return;
         player.teleportAsync(spawnOf(move)).thenAccept(ok -> {
             if (ok) tell(player, move);
-            else plugin.getLogger().warning("A home-worlds move on join didn't go through. The player is still in the world they logged out in.");
+            else Bukkit.getScheduler().runTask(plugin, () -> {
+                // Fail closed: a player who must not stay here and couldn't be moved is sent off, never left in place.
+                plugin.getLogger().warning("A home-worlds move on join didn't go through, so the player was disconnected instead of being left there.");
+                if (player.isOnline()) player.kick(net.kyori.adventure.text.Component.text("Sorry, we couldn't get you to your world. Please join again."));
+            });
         });
     }
 
@@ -85,7 +89,10 @@ public final class HomeWorldsListener implements Listener {
             if (move == null) return;
             player.teleportAsync(spawnOf(move)).thenAccept(ok -> {
                 if (ok) tell(player, move);
-                else plugin.getLogger().warning("A home-worlds move after a world change didn't go through.");
+                else Bukkit.getScheduler().runTask(plugin, () -> {
+                    plugin.getLogger().warning("A home-worlds move after a world change didn't go through, so the player was disconnected instead of being left there.");
+                    if (player.isOnline()) player.kick(net.kyori.adventure.text.Component.text("Sorry, we couldn't get you to your world. Please join again."));
+                });
             });
         });
     }
