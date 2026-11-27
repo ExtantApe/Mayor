@@ -38,6 +38,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class PossePlugin extends JavaPlugin implements ReachService {
     private com.extantape.posse.listen.PresenceListener presence;
     private com.extantape.posse.listen.BookListener books;
+    private PosseCommands commands;
 
     public static final String ADMIN = "posse.admin";
 
@@ -76,6 +77,8 @@ public final class PossePlugin extends JavaPlugin implements ReachService {
         plugins.registerEvents(new com.extantape.posse.listen.HomeWorldsListener(this), this);
         presence = new com.extantape.posse.listen.PresenceListener(this);
         plugins.registerEvents(presence, this);
+        plugins.registerEvents(new com.extantape.posse.listen.AnnouncementListener(this), this);
+        plugins.registerEvents(new com.extantape.posse.listen.SuggestionListener(this), this);
         Bukkit.getScheduler().runTaskTimer(this, presence::refresh, 40L, 40L);
         // Only touch a share event's class when its plugin is installed. The hooks are the only classes that name them.
         if (plugins.getPlugin("BlueMapMini") != null) {
@@ -87,19 +90,24 @@ public final class PossePlugin extends JavaPlugin implements ReachService {
             }
         }
         getServer().getServicesManager().register(ReachService.class, this, this, ServicePriority.Normal);
-        PosseCommands commands = new PosseCommands(this);
+        commands = new PosseCommands(this);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> commands.register(event.registrar()));
     }
 
     @Override
     public void onDisable() {
         getServer().getServicesManager().unregisterAll(this);
+        if (presence != null) presence.showAll();
         partners.clear();
         com.extantape.posse.rules.Pending.clear();
     }
 
     public com.extantape.posse.listen.PresenceListener presence() {
         return presence;
+    }
+
+    public PosseCommands commands() {
+        return commands;
     }
 
     /** Reads the config files again. Returns true if the new rules were applied. */

@@ -19,6 +19,8 @@ circle-only-worlds: []
 #   everyone: as in vanilla.
 #   reach: only players they could chat with under the rules above. A kid and an adult who share no circle don't see
 #     each other online. If the config can't be read at startup, nobody is shown to anyone until it's fixed.
+#     /list then answers like /circles, and the server list shows the player count with no names.
+# Death and advancement lines, and the names Tab offers in commands, follow the circles whatever this says.
 presence: everyone
 
 # Keeps players in the worlds their circles belong in, for a server where a kids' group must never end up in an

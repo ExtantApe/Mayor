@@ -139,6 +139,16 @@ public final class CommandRules {
         return line.startsWith("/") ? "/" : "";
     }
 
+    /**
+     * Whether the line is the server's player list command, {@code /list}, in any letter case and any namespaced form
+     * such as {@code minecraft:list}. It names everyone online, so it follows presence (K832).
+     */
+    public static boolean isPlayerList(String line) {
+        String trimmed = line.startsWith("/") ? line.substring(1) : line;
+        String label = trimmed.trim().split("\\s+")[0].toLowerCase(Locale.ROOT);
+        return label.equals("list") || label.endsWith(":list");
+    }
+
     static boolean matches(Set<String> entries, String label) {
         if (entries.contains(label)) return true;
         int colon = label.indexOf(':');

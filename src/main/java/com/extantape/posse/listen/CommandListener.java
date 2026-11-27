@@ -2,6 +2,7 @@ package com.extantape.posse.listen;
 
 import com.extantape.posse.PossePlugin;
 import com.extantape.posse.rules.CommandRules;
+import com.extantape.posse.rules.Reach;
 import com.extantape.posse.rules.Subject;
 import com.extantape.posse.text.Messages;
 import org.bukkit.Bukkit;
@@ -14,8 +15,9 @@ import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import java.util.UUID;
 
 /**
- * Blocked commands, and private messages and replies to players out of reach. Works on the typed command line
- * before any plugin sees it, so it covers other plugins' commands and their namespaced forms.
+ * Blocked commands, private messages and replies to players out of reach, and /list while the player list follows
+ * reach. Works on the typed command line before any plugin sees it, so it covers other plugins' commands and their
+ * namespaced forms.
  */
 public final class CommandListener implements Listener {
     private final PossePlugin plugin;
@@ -41,7 +43,15 @@ public final class CommandListener implements Listener {
                     return p == null ? null : Subject.of(p);
                 });
         switch (decision.kind()) {
-            case PASS -> { }
+            case PASS -> {
+                // /list names everyone online. While the player list follows reach, it answers like /circles: the
+                // players who can hear you. A server's own blocked-commands entry for it, checked above, wins.
+                boolean followsReach = paused || state.settings().presenceByReach() && state.settings().reach().active();
+                if (followsReach && CommandRules.isPlayerList(event.getMessage()) && !from.hasPermission(Reach.BYPASS)) {
+                    event.setCancelled(true);
+                    plugin.commands().circles(from);
+                }
+            }
             case BLOCK -> {
                 event.setCancelled(true);
                 if (decision.text() != null) {

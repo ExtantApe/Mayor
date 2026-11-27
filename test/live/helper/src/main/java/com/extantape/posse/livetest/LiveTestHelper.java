@@ -35,6 +35,8 @@ import java.util.Locale;
  *   mt clear <player>        empties the player's inventory
  *   mt books <player>        prints "HRT books <player> <author>/<title>;..." for each written book carried
  *   mt chest <player>        puts the first-slot item in a chest at the player's spot, opens it for them and prints "HRT chest <player> ..."
+ * And one command any player may use, mtwho <name>, which does nothing but offer every online player's name on Tab,
+ * hidden or not: a stand-in for a plugin whose completer knows nothing of Posse (K832).
  */
 public final class LiveTestHelper extends JavaPlugin implements Listener {
     /** Bots stand still in made-up worlds, so a death only means a bad spawn point. Keep them alive, and say if one dies anyway. */
@@ -94,6 +96,14 @@ public final class LiveTestHelper extends JavaPlugin implements Listener {
     @Override
     public void onEnable() {
         getServer().getPluginManager().registerEvents(this, this);
+        getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> event.registrar().register(Commands.literal("mtwho")
+                .then(Commands.argument("name", StringArgumentType.word())
+                        .suggests((ctx, builder) -> {
+                            for (Player p : Bukkit.getOnlinePlayers()) builder.suggest(p.getName());
+                            return builder.buildFuture();
+                        })
+                        .executes(ctx -> 1))
+                .build()));
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> event.registrar().register(Commands.literal("mt")
                 .requires(src -> src.getSender().isOp() || !(src.getSender() instanceof Player))
                 .then(Commands.literal("world").then(Commands.argument("name", StringArgumentType.word()).executes(ctx -> {

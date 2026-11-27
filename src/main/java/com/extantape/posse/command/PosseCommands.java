@@ -158,7 +158,8 @@ public final class PosseCommands {
         return String.join("; ", parts);
     }
 
-    private int circles(Player player) {
+    /** Tells the player their circles and who online can hear them. Also the answer to /list while presence is limited. */
+    public int circles(Player player) {
         PossePlugin.State state = plugin.state();
         if (state == null) {
             plugin.tell(player, "chat-paused");

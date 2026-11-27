@@ -140,4 +140,15 @@ class CommandRulesTest {
         add(player("Kid", "forest"));
         assertNull(run(adult, "/msg Kid heck").rewrite());
     }
+
+    @Test
+    void thePlayerListCommandIsRecognizedInEveryForm() {
+        // K832: /list names everyone online, so it follows presence.
+        for (String line : List.of("/list", "list", "/LIST", "/minecraft:list", "/essentials:list", "/list uuids")) {
+            org.junit.jupiter.api.Assertions.assertTrue(CommandRules.isPlayerList(line), line);
+        }
+        for (String line : List.of("/listen", "/playerlist", "/msg list", "/", "")) {
+            org.junit.jupiter.api.Assertions.assertFalse(CommandRules.isPlayerList(line), line);
+        }
+    }
 }

@@ -2,7 +2,8 @@
 # Builds one throwaway Paper server on 127.0.0.1, runs the Posse acceptance tests, and deletes it, even when
 # a test fails. See README.md in this folder.
 # Usage: POSSE_ACCEPT_EULA=1 test/live/run.sh <paper version>
-# POSSE_SUITE=presence-messages.js runs only the join and leave message check; home-worlds.js runs the home-worlds check; book-authors.js runs the book author check (default suite.js).
+# POSSE_SUITE=presence-messages.js runs only the join and leave message check; home-worlds.js runs the home-worlds check; book-authors.js runs the book author check; reach-leaks.js runs the death line, Tab and /list checks (default suite.js).
+# POSSE_JAR=<path> tests that Posse jar, such as an older release, with this folder's tests (default: the one built here).
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 REPO=$(cd "$HERE/../.." && pwd)
@@ -15,7 +16,7 @@ if [ "${POSSE_ACCEPT_EULA:-}" != "1" ]; then
   echo "Set POSSE_ACCEPT_EULA=1 to accept it."
   exit 2
 fi
-JAR=$(ls "$REPO"/build/libs/Posse-*.jar 2>/dev/null | head -1)
+JAR=${POSSE_JAR:-$(ls -t "$REPO"/build/libs/Posse-*.jar 2>/dev/null | head -1)}
 HELPER=$REPO/test/live/helper/build/libs/LiveTestHelper.jar
 FAKEMAP=$REPO/test/live/fakeminimap/build/libs/LiveTestFakeMinimap.jar
 missing=0
