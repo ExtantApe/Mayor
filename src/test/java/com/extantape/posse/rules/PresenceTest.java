@@ -64,4 +64,13 @@ class PresenceTest {
         assertFalse(Presence.maySee(adult, kid, true, null));
         assertTrue(Presence.maySee(kid, kid, true, null));
     }
+
+    @Test
+    void aPlayerOutOfSightIsKeptFromTheGameUnlessTheyStandInTheSameWorld() {
+        // K832: a game offers every player it knows on Tab, so only someone the viewer may see, or can see walk by, is known.
+        assertTrue(Presence.mayKnowOf(true, false));
+        assertTrue(Presence.mayKnowOf(true, true));
+        assertTrue(Presence.mayKnowOf(false, true));
+        assertFalse(Presence.mayKnowOf(false, false));
+    }
 }

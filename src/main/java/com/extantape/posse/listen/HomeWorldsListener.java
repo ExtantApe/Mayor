@@ -62,8 +62,9 @@ public final class HomeWorldsListener implements Listener {
      * A player who has never joined is placed by WelcomeWagon or Multiverse's first-spawn after this event, so the
      * check waits {@link HomeWorlds#joinDelayTicks} ticks and then looks at where they ended up (D297). A returning
      * player is checked at once. Until the delayed check runs, a player these rules govern is pending: they reach
-     * nobody, and nobody reaches them (see {@link Pending}). If they quit first there is nothing to do, and if the
-     * move doesn't go through they are disconnected, never left in a world they aren't allowed in.
+     * nobody, and nobody reaches them (see {@link Pending}). The same goes for a returning player while a move is under
+     * way. If they quit first there is nothing to do, and if the move doesn't go through they are disconnected, never
+     * left in a world they aren't allowed in.
      */
     @EventHandler(priority = EventPriority.LOW)
     public void onJoin(PlayerJoinEvent event) {
@@ -100,18 +101,22 @@ public final class HomeWorldsListener implements Listener {
         if (player != null && plugin.presence() != null) plugin.presence().release(player);
     }
 
-    private void checkAfterJoin(Player player, boolean wasPending) {
+    private void checkAfterJoin(Player player, boolean alreadyPending) {
         UUID id = player.getUniqueId();
         HomeWorlds.Move move = decide(player, player.getWorld().getName());
         if (move == null) {
-            if (wasPending) release(id);
+            if (alreadyPending) release(id);
             return;
         }
+        // A returning player who has to be moved is pending too, until the move is done (K832). Otherwise their join
+        // line would go to whoever can reach the world they must not be in, and so would the leave line if the move
+        // fails and they are disconnected. Nobody hears of them until they are where they may be.
+        Pending.begin(id);
         player.teleportAsync(spawnOf(move)).thenAccept(ok -> Bukkit.getScheduler().runTask(plugin, () -> {
             Player now = Bukkit.getPlayer(id);
             if (ok) {
                 if (now != null) tell(now, move);
-                if (wasPending) release(id);
+                release(id);
             } else {
                 // Fail closed: a player who must not stay here and couldn't be moved is sent off, never left in place.
                 plugin.getLogger().warning("A home-worlds move on join didn't go through, so the player was disconnected instead of being left there.");

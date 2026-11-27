@@ -3,6 +3,25 @@
 Kept by this repo's owning session (Minecraft: Plugins Lead), per `~/Code/CLAUDE.md`, "Test self-audits". Newest first.
 
 
+## 2026-11-27: names that reach past circles (0.11.2, K832)
+
+| Promise | Covered by |
+| --- | --- |
+| A death line reaches only players who may reach the dead player (refused pair, allowed pair, bypass), and the console keeps it | unit `AnnouncementsTest`; bot `reach-leaks.js`, "Death lines follow reach" (fails on 0.11.1) |
+| A death line naming a killer needs both in reach | unit `AnnouncementsTest.aLineThatNamesAKillerNeedsBothToBeInReach` |
+| An advancement line follows the same rule | unit; bot, "Advancement lines follow reach" (fails on 0.11.1) |
+| Paused or unreadable: only the player and bypass get the line | unit `pausedRulesReachOnlyThePlayerAndBypass`, `aViewerPosseCannotWorkOutGetsNothing`, `aLinePosseCannotWorkOutStillReachesThePlayerAndBypassOnly`; bot, paused part |
+| Tab offers only names in reach, for vanilla, namespaced and plugin commands, any letter case or quoting; bypass gets everyone | unit `NameSuggestionsTest`; bot, "Tab offers only names in reach" over seven commands (fails on 0.11.1) |
+| Paused or unreadable: Tab offers only the asker, unless bypass | unit; bot, paused part |
+| With `presence: reach`, a player's game is told of nobody out of sight in another world; same-world players stay visible and unlisted; circle changes follow within seconds | unit `PresenceTest.aPlayerOutOfSightIsKeptFromTheGame...`; bot, "A player's game is told nothing" (fails on 0.11.1) |
+| `/list` in any form answers like `/circles`, bypass gets the full list; the server list sample is empty | unit `CommandRulesTest.thePlayerListCommandIsRecognizedInEveryForm`; bot, "/list follows reach" and "The server list" (fail on 0.11.1) |
+| A returning player moved on join is announced after the move; a failed move names them to nobody | bot, "A returning player" and "A player disconnected while joining" (the second fails on 0.11.1) |
+| With no circles nothing is filtered | unit `withNoCircles...` in both new tests; bot control part |
+| The dead player's own death screen keeps its cause line | bot, "the kid's own death screen still says how they died" |
+| A death line another plugin removed stays removed (Posse reads it at MONITOR) | a throwaway copy of the main server, where a plugin removes it in the hubs: same counts on 0.11.1 and 0.11.2 (no bot test here, since it needs that plugin) |
+
+Gaps: a bot has no Tab menu of its own, so what a real game offers by itself is read from the players the bot's game was told about, not from a real client. A pet's death line and lines that plugins broadcast themselves (EssentialsX's new-player welcome) aren't Posse's to filter, and are listed as limits. The death line with a player killer is unit-tested only; no bot kills another. Sleep messages carry counts, never names, so they need no test.
+
 ## 2026-11-25: first join and old nodes (0.11.1, D297)
 
 | Promise | Covered by |
